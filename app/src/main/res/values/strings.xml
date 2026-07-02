@@ -35,11 +35,16 @@
     <string name="scan_can_button">Scanner le CAN</string>
     <string name="scan_mrz_button">Scanner la MRZ</string>
     <string name="scan_hint_can">Cadre le recto de la carte, bien à plat et éclairé — le CAN (6 chiffres) est détecté automatiquement.</string>
-    <string name="scan_hint_mrz">Rapproche le téléphone : la bande MRZ (lignes de caractères et &lt; en bas du document) doit occuper toute la largeur de l\'écran, bien à plat et éclairée.</string>
+    <string name="scan_hint_mrz">Place la bande MRZ (lignes de caractères et &lt; en bas du document) dans le cadre, bien à plat et éclairée. Astuce : tourne le téléphone en paysage pour plus de précision.</string>
     <string name="camera_denied">Caméra refusée — tu peux saisir les champs à la main.</string>
     <string name="camera_blocked">Caméra bloquée dans les réglages Android — saisis les champs à la main, ou réactive-la dans Paramètres &gt; Applications.</string>
     <string name="camera_unavailable">Caméra indisponible sur cet appareil — saisis les champs à la main.</string>
     <string name="scan_filled">Champs remplis depuis le scan — vérifie, puis approche le document.</string>
+
+    <!-- Confidentialité -->
+    <string name="privacy_badge">100 % local — rien n\'est envoyé, rien n\'est conservé</string>
+    <string name="privacy_title">Confidentialité</string>
+    <string name="privacy_text">Véridoc fonctionne entièrement sur ton téléphone :\n\n• Lecture NFC, scan caméra et vérifications sont exécutés localement, hors connexion.\n\n• Aucune donnée n\'est transmise à un serveur : l\'application ne possède pas la permission Internet — elle est techniquement incapable d\'envoyer quoi que ce soit.\n\n• Rien n\'est conservé : aucune donnée lue n\'est écrite sur l\'appareil (ni fichier, ni base, ni sauvegarde système). Tout reste en mémoire et disparaît à la fermeture.\n\n• Les images de la caméra sont analysées en mémoire et jamais enregistrées.\n\nLire une pièce d\'identité traite des données personnelles : recueille le consentement de la personne concernée et n\'utilise l\'application que dans un cadre légitime (RGPD).</string>
 
     <!-- Aide -->
     <string name="help">Comment scanner ?</string>

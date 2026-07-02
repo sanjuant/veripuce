@@ -234,6 +234,33 @@
             android:text="@string/help"
             app:icon="@android:drawable/ic_menu_help" />
 
+        <!-- Bandeau confidentialité : tout est local, rien n'est envoyé ni conservé. -->
+        <LinearLayout
+            android:id="@+id/privacyRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_privacy"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/privacy_badge"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
         <!-- Carte résultat -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/resultCard"

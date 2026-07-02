@@ -56,8 +56,15 @@ class ScanOverlayView @JvmOverloads constructor(
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
 
-        val winW = w * windowWidthFraction
-        val winH = winW / windowRatio
+        var winW = w * windowWidthFraction
+        var winH = winW / windowRatio
+        // En paysage, une fenêtre au ratio carte déborderait verticalement :
+        // plafonner la hauteur et recalculer la largeur en conséquence.
+        val maxH = h * 0.68f
+        if (winH > maxH) {
+            winH = maxH
+            winW = winH * windowRatio
+        }
         val cx = w / 2f
         val cy = h * windowVerticalBias
         window.set(cx - winW / 2f, cy - winH / 2f, cx + winW / 2f, cy + winH / 2f)

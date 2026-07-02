@@ -164,6 +164,14 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
 
+        findViewById<View>(R.id.privacyRow).setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.privacy_title)
+                .setMessage(R.string.privacy_text)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
+
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
     }
 

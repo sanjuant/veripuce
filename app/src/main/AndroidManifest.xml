@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Garantie de confidentialité VÉRIFIABLE : les libs ML Kit/GMS injectent
+         INTERNET et ACCESS_NETWORK_STATE via la fusion de manifestes — on les
+         retire. Le modèle OCR est embarqué (bundled) : rien n'a besoin du réseau,
+         et l'app devient techniquement incapable d'exfiltrer une donnée. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
     <!-- Caméra optionnelle : le scan OCR est un confort, la saisie manuelle reste
          possible -> ne pas restreindre l'installation aux appareils avec caméra. -->
@@ -34,9 +42,13 @@
                 android:resource="@xml/nfc_tech_filter" />
         </activity>
 
-        <!-- Scan OCR (CAN / MRZ) via CameraX + ML Kit, on-device. -->
+        <!-- Scan OCR (CAN / MRZ) via CameraX + ML Kit, on-device.
+             fullSensor : suit la rotation physique même si la rotation système est
+             verrouillée — en paysage, la MRZ profite de toute la largeur du capteur
+             (précision OCR nettement meilleure). -->
         <activity
             android:name=".ScanActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullSensor" />
     </application>
 </manifest>

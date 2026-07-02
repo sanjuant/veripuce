@@ -158,12 +158,28 @@ app/src/main/
 └── res/                     # Material 3 : layouts, thèmes clair/sombre, icônes adaptatives
 ```
 
+## Confidentialité
+
+Véridoc est conçu **local-first**, et cette garantie est **vérifiable techniquement** :
+
+- **Aucune permission Internet.** Les permissions `INTERNET` et `ACCESS_NETWORK_STATE`
+  (injectées par les bibliothèques ML Kit/GMS) sont explicitement **retirées** du manifeste
+  (`tools:node="remove"`) : l'application est *incapable* de transmettre une donnée.
+  Vérifiable sur l'APK : `aapt2 dump permissions veridoc.apk` → NFC et CAMERA uniquement.
+- **Aucun stockage.** Les données lues (état civil, photo, adresse) ne sont écrites nulle
+  part — ni fichier, ni base, ni préférences ; `allowBackup=false`. Tout reste en mémoire
+  et disparaît à la fermeture.
+- **OCR hors-ligne.** Le modèle ML Kit est embarqué dans l'APK (mode *bundled*) : les images
+  de la caméra sont analysées en mémoire sur l'appareil et jamais enregistrées.
+
+Un bandeau « 100 % local » dans l'application ouvre le détail de ces garanties.
+
 ## Conformité et cadre d'usage
 
 > **Important** — lire une pièce d'identité traite des **données personnelles** (dont la photo).
 >
-> - **RGPD** : consentement de la personne, minimisation, pas de conservation inutile ;
->   Véridoc ne stocke rien et n'envoie rien (lecture et OCR entièrement locaux).
+> - **RGPD** : consentement de la personne concernée, minimisation, aucune conservation —
+>   voir les garanties techniques de la section Confidentialité.
 > - La vérification d'**origine étatique** (étape 3, chaîne CSCA) n'est pas encore active :
 >   l'app prouve aujourd'hui l'intégrité interne du document, pas son émission par l'État.
 
