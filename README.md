@@ -13,9 +13,9 @@ Véridoc lit la puce NFC d'une **carte nationale d'identité électronique** (fo
 **cryptographiquement** que les données n'ont pas été altérées (*passive authentication*).
 Aucun matériel externe : le téléphone sert de lecteur.
 
-| Mode carte d'identité | Mode passeport | Résultat de lecture |
-|:---:|:---:|:---:|
-| ![Mode carte d'identité](docs/screen-id.png) | ![Mode passeport](docs/screen-passport.png) | ![Résultat de lecture](docs/screen-result.png) |
+| Mode carte d'identité | Mode passeport | Scan OCR (viseur) | Résultat de lecture |
+|:---:|:---:|:---:|:---:|
+| ![Mode carte d'identité](docs/screen-id.png) | ![Mode passeport](docs/screen-passport.png) | ![Scan OCR de la MRZ](docs/screen-scan.png) | ![Résultat de lecture](docs/screen-result.png) |
 
 *Captures d'écran avec des données fictives (spécimen ICAO 9303 et identité factice).*
 

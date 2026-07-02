@@ -79,6 +79,20 @@ class ScanActivity : AppCompatActivity() {
             if (mode == MODE_CAN) R.string.scan_hint_can else R.string.scan_hint_mrz
         )
 
+        // Viseur adapté au document : recto de carte (ID-1) pour le CAN,
+        // bande MRZ large pour le passeport / dos de CNIe.
+        findViewById<ScanOverlayView>(R.id.overlay).apply {
+            if (mode == MODE_CAN) {
+                windowRatio = 1.586f          // format carte ID-1 (85,6 x 54 mm)
+                windowWidthFraction = 0.82f
+                windowVerticalBias = 0.38f
+            } else {
+                windowRatio = 4.0f            // bande MRZ (2 lignes TD3 / 3 lignes TD1)
+                windowWidthFraction = 0.94f
+                windowVerticalBias = 0.42f
+            }
+        }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
         ) {

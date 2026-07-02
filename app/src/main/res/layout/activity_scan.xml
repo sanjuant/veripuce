@@ -10,6 +10,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Viseur : fenêtre claire sur voile sombre, coins de cadrage. -->
+    <fr.veridoc.app.ScanOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <TextView
         android:id="@+id/scanHint"
         android:layout_width="match_parent"
