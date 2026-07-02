@@ -85,6 +85,14 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     // 1.18.0 = dernière version pour compileSdk 36 (1.19+ exige l'API 37 et AGP 9.1).
     implementation("androidx.core:core-ktx:1.18.0")
+
+    // Scan OCR du CAN / de la MRZ : CameraX + ML Kit Text Recognition en mode BUNDLED
+    // (modèle embarqué -> 100 % on-device et hors-ligne, aucune image ne quitte le
+    // téléphone, fonctionne sans Play Services ; +~4 Mo d'APK, assumé pour une app d'identité).
+    implementation("androidx.camera:camera-camera2:1.6.1")
+    implementation("androidx.camera:camera-lifecycle:1.6.1")
+    implementation("androidx.camera:camera-view:1.6.1")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
     implementation("com.google.android.material:material:1.14.0")
 

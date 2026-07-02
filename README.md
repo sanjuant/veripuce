@@ -1,175 +1,178 @@
-# Lecteur eID Android — CNIe & passeport (NFC)
+# Véridoc
 
-Portage de la logique de `cnie-python-tools` vers Android, en lecture **NFC** (sans
-matériel externe) au lieu d'un lecteur PC/SC à contact. Lit la **CNIe française** (PACE-CAN)
-et les **passeports** biométriques (PACE-MRZ / BAC).
+**Lecture et vérification NFC de documents d'identité — CNIe française & passeports biométriques (ICAO 9303).**
 
-## Idée
+[![Build APK](https://github.com/sanjuant/veridoc/actions/workflows/build-apk.yml/badge.svg)](https://github.com/sanjuant/veridoc/actions/workflows/build-apk.yml)
+[![Release](https://img.shields.io/github/v/release/sanjuant/veridoc)](https://github.com/sanjuant/veridoc/releases/latest)
+![Platform](https://img.shields.io/badge/plateforme-Android%2024%2B-3DDC84?logo=android&logoColor=white)
+![minSdk](https://img.shields.io/badge/minSdk-24-blue)
+![targetSdk](https://img.shields.io/badge/targetSdk-36-blue)
 
-La CNI française (depuis 2021) stocke ses données au format ICAO 9303, comme un
-passeport biométrique. On y accède via **PACE-CAN** (le CAN = les 6 chiffres imprimés
-sur la face avant), puis en Secure Messaging. Tout ça est déjà implémenté par la
-librairie **JMRTD**, qui tourne sur Android. On ne réimplémente donc que :
+Véridoc lit la puce NFC d'une **carte nationale d'identité électronique** (format 2021) ou d'un
+**passeport biométrique**, affiche l'état civil et la photo stockés dans la puce, et vérifie
+**cryptographiquement** que les données n'ont pas été altérées (*passive authentication*).
+Aucun matériel externe : le téléphone sert de lecteur.
 
-- le **transport** : `IsoDep` (NFC natif Android) à la place de la couche PC/SC ;
-- éventuellement le **DG13** (spécifique France : adresse, taille, lieu de naissance),
-  que JMRTD ne parse pas nativement — à porter depuis le code de Hubert.
+| Mode carte d'identité | Mode passeport | Résultat de lecture |
+|:---:|:---:|:---:|
+| ![Mode carte d'identité](docs/screen-id.png) | ![Mode passeport](docs/screen-passport.png) | ![Résultat de lecture](docs/screen-result.png) |
 
-## CNIe **et** passeport
+*Captures d'écran avec des données fictives (spécimen ICAO 9303 et identité factice).*
 
-Un passeport biométrique est un eMRTD ICAO 9303 exactement comme la CNIe — c'est le
-document pour lequel JMRTD a été écrit. La seule différence est la **clé d'accès** :
+## Fonctionnalités
 
-| Document      | Ouverture de session                     | Saisie utilisateur                          |
-|---------------|------------------------------------------|---------------------------------------------|
-| CNIe (France) | **PACE-CAN**                             | CAN — 6 chiffres au recto                   |
-| Passeport     | **PACE-MRZ** (repli **BAC** si legacy)   | n° document + naissance + expiration (AAMMJJ)|
+- **Deux modes de lecture** — CNIe via **PACE-CAN** (les 6 chiffres du recto), passeport via
+  **PACE-MRZ** avec repli **BAC** pour les documents anciens.
+- **Scan OCR intégré** — le CAN ou la bande MRZ peuvent être scannés à la caméra
+  (CameraX + ML Kit, **100 % hors-ligne, on-device**) ; la lecture MRZ n'est acceptée que si
+  les **chiffres de contrôle ICAO** sont valides. La saisie manuelle reste toujours possible.
+- **Vérification d'intégrité** — les empreintes des groupes de données lus (DG1, DG2, DG13)
+  sont recalculées sur les **octets bruts de la puce** et comparées aux empreintes **signées**
+  du SOD (Document Security Object).
+- **Données France (DG13)** — adresse, taille et lieu de naissance, spécifiques à la CNIe,
+  décodés par un parseur BER-TLV dédié (encodage Latin-1 géré).
+- **Photo de la puce** — décodage JPEG 2000 (et JPEG/PNG), formats **ISO 19794** et
+  **ISO 39794** (passeports récents).
+- **Interface Material 3** — thème clair/sombre, icône adaptative + monochrome (Android 13+),
+  affichage bord-à-bord (Android 15+).
 
-Une fois la session ouverte, **DG1 (MRZ)**, **DG2 (photo)** et **EF.SOD** se lisent de
-façon identique ; le **DG13** est propre à la France et sera simplement absent d'un
-passeport. Le choix de mode se fait dans l'UI ; le code de clé est dans
-[`AccessKey.kt`](app/src/main/java/fr/veridoc/app/AccessKey.kt) et l'ouverture de session
-dans `CnieReader.openWithCan` / `openWithMrz`.
+## Comment ça marche
 
-L'interface est en **Material 3** (thème clair/sombre, sélecteur de mode, carte résultat
-avec photo, et chips d'état pour l'intégrité et la signature).
+Un eMRTD (ICAO 9303) exige l'établissement d'un canal sécurisé avant toute lecture. Seule la
+**clé d'accès** diffère selon le document ; la lecture est ensuite identique :
 
-## Ce qui compte vraiment pour de l'anti-fraude
+| Document | Ouverture de session | Clé d'accès |
+|---|---|---|
+| CNIe (France, 2021+) | PACE | **CAN** — 6 chiffres imprimés au recto |
+| Passeport récent | PACE | Clé dérivée de la **MRZ** (n° document + naissance + expiration) |
+| Passeport ancien | BAC | Clé dérivée de la **MRZ** |
 
-Lire DG1 (MRZ) et DG2 (photo) ne prouve rien. Ce qui prouve qu'une carte est
-authentique et non trafiquée, c'est la **passive authentication** :
-
-1. lire l'**EF.SOD** (Document Security Object) ;
-2. recalculer le hash de chaque data group lu et le comparer au hash **signé** stocké
-   dans le SOD → détecte toute altération des données ;
-3. vérifier la **signature** du SOD et que son certificat signataire (DSC) remonte à une
-   **CSCA de confiance** → prouve que la carte a bien été émise par l'État.
-
-Pour l'étape 3, il faut un **magasin de certificats CSCA**. Sources : l'ICAO PKD, ou
-pour la France les certificats CSCA publiés par l'ANTS. Sans ça, tu vérifies l'intégrité
-interne mais pas l'origine étatique. `CnieReader.kt` fait déjà les étapes 1 et 2 ;
-l'étape 3 est balisée par des `TODO`.
-
-En complément, la **Chip Authentication** (CA/AA) permet de détecter une puce *clonée*
-(la puce prouve qu'elle détient une clé privée non extractible).
-
-## Ce qui reste impossible
-
-Comme sur PC : les empreintes (DG3) et l'iris (DG4) sont derrière l'**EAC**, qui exige
-un certificat de terminal délivré par l'État. La carte répondra `6982`. Aucune solution
-logicielle ne contourne ça.
-
-## Dépendances (app/build.gradle.kts)
-
-```kotlin
-implementation("org.jmrtd:jmrtd:0.8.6")                  // eMRTD : PACE/BAC, LDS, SOD (+ ISO 39794)
-implementation("net.sf.scuba:scuba-sc-android:0.0.26")   // transport SCUBA pour Android
-implementation("org.bouncycastle:bcprov-jdk18on:1.84")   // crypto (aligné sur le transitif JMRTD)
-implementation("io.github.CshtZrgk:jp2-android:1.0.0")   // décodage JPEG 2000 (miroir JP2ForAndroid)
+```
+IsoDep (NFC) ──► CardService (SCUBA) ──► PassportService (JMRTD)
+                       │
+                       ├── PACE-CAN / PACE-MRZ / BAC          (session sécurisée)
+                       ├── DG1 (MRZ) · DG2 (photo) · DG13 (France)
+                       └── EF.SOD ──► vérification des empreintes signées
 ```
 
-Chaîne de build : AGP 8.13.2 · Kotlin 2.3.21 · Gradle 8.14.3 (wrapper) · compileSdk/targetSdk 36
-· minSdk 24. Le passage à AGP 9.x (Kotlin intégré, Gradle 9.1+, API 37) est l'étape suivante
-naturelle quand l'écosystème AndroidX l'exigera.
+### Modèle de sécurité
 
-Gotchas connus :
+La *passive authentication* (ICAO 9303 partie 11) comporte trois étapes :
 
-- **Bouncy Castle vs BC embarqué d'Android.** Android embarque une vieille version
-  partielle de BC. Au démarrage de l'app, retire-la et enregistre la complète :
-  ```kotlin
-  Security.removeProvider("BC")
-  Security.addProvider(org.bouncycastle.jce.provider.BouncyCastleProvider())
-  ```
-  (Historiquement on utilisait SpongyCastle pour éviter le conflit ; sur Android récent,
-  BC standard passe si tu fais ce remplacement.)
-- **Pas de `javax.imageio` sur Android** → la photo (souvent en JPEG 2000) se décode avec
-  le décodeur Gemalto (`JP2Decoder(bytes).decode()` → `Bitmap`).
+| # | Étape | Ce que ça prouve | Statut |
+|---|---|---|---|
+| 1 | Lecture de l'**EF.SOD** | — | ✅ |
+| 2 | Empreintes recalculées = empreintes **signées** du SOD | Données **non altérées** | ✅ |
+| 3 | Signature du SOD chaînée jusqu'à une **CSCA de confiance** (ANTS / ICAO PKD) | Document **émis par l'État** | 🚧 roadmap |
 
-## Statut du code
+En complément, la *Chip Authentication* (détection de puce **clonée**) est envisagée en roadmap.
+Les chips d'état de l'interface reflètent honnêtement cette couverture : « Intégrité OK » et
+« Signature non vérifiée » tant que le magasin CSCA n'est pas embarqué.
 
-C'est un **squelette d'architecture**, pas un projet compilé. Les signatures exactes de
-certaines méthodes JMRTD/SCUBA (`PACEKeySpec.createCANKey`, `PACEInfo.toParameterSpec`,
-`CardService.getInstance(IsoDep)`…) ont bougé selon les versions — je n'ai pas pu les
-compiler ici (dépendances Maven non résolvables dans cet environnement), donc à
-réconcilier avec les versions que tu épingles. La logique et l'ordre des appels, eux,
-sont stables.
+### Limites structurelles
 
-## Pour la présentation « alternative au lecteur dédié »
+- **DG3 (empreintes digitales) et DG4 (iris)** sont protégés par l'EAC, qui exige un certificat
+  de terminal délivré par l'État. Ils sont **inaccessibles** à toute application tierce, par
+  conception (la puce répond `6982`).
+- La position de l'antenne NFC varie selon les téléphones : la lecture demande un placement
+  stable du document quelques secondes.
 
-Points à assumer honnêtement en réunion :
+## Installation
 
-- **Fragmentation matérielle.** L'antenne NFC et sa position varient énormément d'un
-  téléphone à l'autre ; la lecture d'une puce eID est plus capricieuse qu'avec un lecteur
-  dédié bien positionné. À tester sur le parc réel.
-- **Pas de certification.** Un lecteur dédié peut être certifié/homologué ; une app
-  maison sur téléphone quelconque ne l'est pas. Selon le cadre réglementaire de votre
-  activité, ça peut être bloquant.
-- **RGPD.** Lire une pièce d'identité = données personnelles (dont la photo, donnée
-  biométrique). Consentement de la personne présente, minimisation, pas de stockage
-  inutile, chiffrement si conservation. À cadrer avec votre DPO.
+### Depuis les releases
 
-## Structure
+Télécharger le dernier APK signé : **[Releases](https://github.com/sanjuant/veridoc/releases/latest)**
+(`veridoc-x.y.z.apk`), puis l'installer (autoriser les sources inconnues si nécessaire).
+
+Prérequis : Android 7.0+ (API 24) avec NFC. La caméra est optionnelle (scan OCR).
+
+### Compilation locale
+
+```bash
+git clone https://github.com/sanjuant/veridoc.git
+cd veridoc
+./gradlew assembleDebug          # APK : app/build/outputs/apk/debug/veridoc-debug.apk
+```
+
+Prérequis : JDK 17, Android SDK (compileSdk 36). Le wrapper Gradle est fourni (8.14.3 épinglé).
+
+### Intégration continue
+
+| Déclencheur | Workflow | Sortie |
+|---|---|---|
+| push sur une branche | `build-apk.yml` | artefact **veridoc-debug-apk** |
+| tag `v*` (ex. `v1.0.0`) | `release.yml` | **GitHub Release** avec APK **signé** `veridoc-x.y.z.apk` |
+
+La clé de signature n'est jamais dans le dépôt : elle est injectée par secrets GitHub
+(`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`). Le `versionCode` est
+dérivé du tag (déterministe et monotone), et la signature de l'APK est vérifiée par `apksigner`
+avant publication.
+
+## Stack technique
+
+| Composant | Version | Rôle |
+|---|---|---|
+| [JMRTD](https://jmrtd.org/) | 0.8.6 | PACE/BAC, Secure Messaging, LDS, SOD |
+| [SCUBA](https://scuba.sourceforge.net/) (`scuba-sc-android`) | 0.0.26 | Transport carte à puce sur Android |
+| BouncyCastle (`bcprov-jdk18on`) | 1.84 | Cryptographie (Brainpool, CMAC…) |
+| JP2ForAndroid (miroir `io.github.CshtZrgk:jp2-android`) | 1.0.0 | Décodage JPEG 2000 |
+| CameraX | 1.6.1 | Prévisualisation + analyse d'images (scan OCR) |
+| ML Kit Text Recognition (bundled) | 16.0.1 | OCR on-device, hors-ligne |
+| AndroidX / Material Components | core 1.18 · appcompat 1.7.1 · lifecycle 2.11 · material 1.14 | UI |
+
+Chaîne de build : **AGP 8.13.2 · Kotlin 2.3.21 · Gradle 8.14.3 · JDK 17 · compileSdk/targetSdk 36 · minSdk 24**.
+
+<details>
+<summary>Notes techniques (pièges connus)</summary>
+
+- **BouncyCastle vs BC embarqué d'Android** — Android embarque une version partielle de BC.
+  Au démarrage, l'app remplace le provider : `Security.removeProvider("BC")` puis
+  `Security.addProvider(BouncyCastleProvider())`.
+- **Passive authentication sur octets bruts** — les empreintes du SOD sont calculées par
+  l'émetteur sur les octets *tels que stockés* ; hacher une re-sérialisation JMRTD
+  (`DGxFile.encoded`) peut diverger octet à octet et invalider un document authentique.
+  Véridoc lit chaque DG une fois en brut et parse depuis ces mêmes octets.
+- **Pas de `javax.imageio` sur Android** — la photo (souvent JPEG 2000) est décodée par
+  JP2ForAndroid ; la coordonnée d'origine `com.gemalto.jp2:jp2-android` n'étant plus
+  résolvable, le projet utilise son miroir Maven Central (même package, mêmes libs natives).
+- **DG13 en Latin-1** — les champs texte de la CNIe sont encodés ISO-8859-1 avec `<` comme
+  séparateur et NUL comme remplissage.
+- **`androidx.core` plafonné à 1.18** — les versions 1.19+ exigent l'API 37 et AGP 9.1 ;
+  la migration AGP 9 (Kotlin intégré, Gradle 9.1+) est prévue quand l'écosystème l'imposera.
+
+</details>
+
+## Structure du projet
 
 ```
 app/src/main/
 ├── AndroidManifest.xml
 ├── java/fr/veridoc/app/
-│   ├── MainActivity.kt      # UI Material 3, sélecteur de mode, dispatch NFC, lancement lecture
-│   ├── AccessKey.kt         # clé d'accès : Can(can) pour la CNIe, Mrz(...) pour le passeport
-│   ├── CnieReader.kt        # PACE-CAN / PACE-MRZ+BAC + lecture DG1/DG2/DG13 + passive auth
+│   ├── MainActivity.kt      # UI, sélecteur de mode, dispatch NFC, lancement lecture
+│   ├── ScanActivity.kt      # scan OCR (CameraX + ML Kit, on-device)
+│   ├── MrzOcr.kt            # parseur MRZ TD1/TD2/TD3 + CAN, chiffres de contrôle ICAO
+│   ├── AccessKey.kt         # clé d'accès : Can (CNIe) / Mrz (passeport)
+│   ├── CnieReader.kt        # PACE/BAC, lecture DG1/DG2/DG13, passive authentication
 │   ├── ReadResult.kt        # résultat structuré
-│   ├── BerTlv.kt / Dg13*.kt # parsing DG13 (spécifique France)
-│   └── ...
-└── res/
-    ├── layout/activity_main.xml       # écran Material 3 (modes, statut, carte résultat)
-    ├── values/ (themes, colors, strings) + values-night/colors.xml
-    ├── drawable/ic_*.xml              # icônes modes + états
-    └── xml/nfc_tech_filter.xml        # filtre IsoDep
+│   └── BerTlv.kt, Dg13*.kt  # parseur BER-TLV + DG13 (spécifique France)
+└── res/                     # Material 3 : layouts, thèmes clair/sombre, icônes adaptatives
 ```
 
-## Compilation (deux options)
+## Conformité et cadre d'usage
 
-Le projet est un projet Gradle complet. Il ne peut pas être compilé dans un
-environnement sans SDK Android ni accès aux dépôts Google/Maven — voici deux voies.
+> **Important** — lire une pièce d'identité traite des **données personnelles** (dont la photo).
+>
+> - **RGPD** : consentement de la personne, minimisation, pas de conservation inutile ;
+>   Véridoc ne stocke rien et n'envoie rien (lecture et OCR entièrement locaux).
+> - La vérification d'**origine étatique** (étape 3, chaîne CSCA) n'est pas encore active :
+>   l'app prouve aujourd'hui l'intégrité interne du document, pas son émission par l'État.
 
-### Option A — dans le cloud, sans rien installer (GitHub Actions)
+## Roadmap
 
-1. Crée un dépôt GitHub et pousse tout ce dossier.
-2. Le workflow `.github/workflows/build-apk.yml` se lance à chaque push (ou à la main
-   via l'onglet **Actions**).
-3. Une fois le job terminé, télécharge l'artefact **veridoc-debug-apk** : c'est l'APK.
-
-Le runner GitHub fournit le SDK Android et Gradle ; aucun outil local requis.
-
-### Option B — en local (Android Studio)
-
-1. Ouvre le dossier dans Android Studio (Giraffe/Koala ou plus récent).
-2. Laisse-le synchroniser Gradle et télécharger les dépendances.
-3. **Build > Build Bundle(s) / APK(s) > Build APK(s)**, ou en ligne de commande :
-   ```
-   ./gradlew assembleDebug        # le wrapper est fourni (Gradle 8.14.3 pinné)
-   ```
-   L'APK se trouve dans `app/build/outputs/apk/debug/`.
-
-### Corrections appliquées (build vérifié vert)
-
-Le squelette compile désormais tel quel : `assembleDebug` produit un APK signé (clé
-debug) avec JMRTD 0.7.42 + scuba-sc-android 0.0.26 — les signatures JMRTD/SCUBA du code
-n'ont **pas** eu besoin d'être touchées. Seuls des points de dépendances/packaging
-bloquaient, tous corrigés dans `app/build.gradle.kts` :
-
-- **Décodeur JP2.** La coordonnée `com.gemalto.jp2:jp2-android:1.0` est introuvable
-  (Maven Central, Google, et JitPack — le JitPack officiel de Gemalto échoue au build).
-  Remplacée par le miroir Maven Central `io.github.CshtZrgk:jp2-android:1.0.0`, qui
-  fournit le **même package** `com.gemalto.jp2.*` et les libs natives — aucun changement
-  de code (l'import `com.gemalto.jp2.JP2Decoder` reste valide).
-- **Bouncy Castle en double.** JMRTD tire `bcprov-jdk18on` en transitif, en conflit avec
-  le `bcprov-jdk15to18` déclaré (« Duplicate class »). Aligné sur une seule variante :
-  `org.bouncycastle:bcprov-jdk18on:1.78.1`.
-- **Collision de packaging.** Les jars BC embarquent des métadonnées identiques
-  (`META-INF/versions/9/OSGI-INF/MANIFEST.MF`, licences) → bloc
-  `packaging { resources { excludes } }`.
-
-Si tu épingles d'autres versions de `org.jmrtd:jmrtd` / `net.sf.scuba:scuba-sc-android`,
-revérifie les signatures `doPACE` / `PACEKeySpec.createCANKey` / `PACEInfo.toParameterSpec`
-/ `CardService.getInstance(IsoDep)` : elles ont bougé selon les versions.
+- [ ] **Passive authentication complète** : vérification de la signature du SOD et chaîne
+      DSC → CSCA (magasin ANTS / ICAO PKD embarqué)
+- [ ] **Chip Authentication** (détection de clone)
+- [ ] Migration AGP 9.x / API 37 quand l'écosystème AndroidX l'exigera
+- [x] Scan OCR du CAN et de la MRZ (on-device)
+- [x] Support passeport (PACE-MRZ / BAC) et CNIe (PACE-CAN)
+- [x] Release signée automatisée (tag → GitHub Release)

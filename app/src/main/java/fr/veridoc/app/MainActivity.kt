@@ -9,6 +9,7 @@ import android.nfc.tech.IsoDep
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.ColorRes
@@ -40,6 +41,35 @@ class MainActivity : AppCompatActivity() {
     private var nfcAdapter: NfcAdapter? = null
     private var mode: Mode = Mode.ID
     private var readJob: Job? = null
+
+    /** Statut posé par le retour de scan : ne pas l'écraser au onResume qui suit. */
+    private var statusSetByScan = false
+
+    /** Retour du scan OCR : pré-remplit les champs (la saisie manuelle reste possible). */
+    private val scanLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+            val data = res.data ?: return@registerForActivityResult
+            if (res.resultCode == RESULT_OK) {
+                when (data.getStringExtra(ScanActivity.EXTRA_MODE)) {
+                    ScanActivity.MODE_CAN ->
+                        canInput.setText(data.getStringExtra(ScanActivity.EXTRA_CAN))
+                    ScanActivity.MODE_MRZ -> {
+                        docInput.setText(data.getStringExtra(ScanActivity.EXTRA_DOC))
+                        dobInput.setText(data.getStringExtra(ScanActivity.EXTRA_DOB))
+                        expInput.setText(data.getStringExtra(ScanActivity.EXTRA_EXP))
+                    }
+                }
+                resultCard.visibility = View.GONE // l'ancien résultat ne correspond plus
+                setStatus(getString(R.string.scan_filled), R.drawable.ic_state_ok, R.color.on_ok_container)
+                statusSetByScan = true
+            } else if (data.getBooleanExtra(ScanActivity.EXTRA_CAMERA_UNAVAILABLE, false)) {
+                warn(getString(R.string.camera_unavailable)); statusSetByScan = true
+            } else if (data.getBooleanExtra(ScanActivity.EXTRA_PERMISSION_DENIED, false)) {
+                val blocked = data.getBooleanExtra(ScanActivity.EXTRA_PERMISSION_PERMANENT, false)
+                warn(getString(if (blocked) R.string.camera_blocked else R.string.camera_denied))
+                statusSetByScan = true
+            }
+        }
 
     private lateinit var modeGroup: MaterialButtonToggleGroup
     private lateinit var groupCan: View
@@ -103,6 +133,28 @@ class MainActivity : AppCompatActivity() {
         }
         applyMode(Mode.ID)
 
+        // Sans caméra (le manifeste la déclare optionnelle), on masque simplement les
+        // boutons de scan : la saisie manuelle est le chemin nominal.
+        val hasCamera = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY)
+        findViewById<MaterialButton>(R.id.scanCan).apply {
+            visibility = if (hasCamera) View.VISIBLE else View.GONE
+            setOnClickListener {
+                scanLauncher.launch(
+                    Intent(this@MainActivity, ScanActivity::class.java)
+                        .putExtra(ScanActivity.EXTRA_MODE, ScanActivity.MODE_CAN)
+                )
+            }
+        }
+        findViewById<MaterialButton>(R.id.scanMrz).apply {
+            visibility = if (hasCamera) View.VISIBLE else View.GONE
+            setOnClickListener {
+                scanLauncher.launch(
+                    Intent(this@MainActivity, ScanActivity::class.java)
+                        .putExtra(ScanActivity.EXTRA_MODE, ScanActivity.MODE_MRZ)
+                )
+            }
+        }
+
         findViewById<MaterialButton>(R.id.help).setOnClickListener {
             // Aide dans une boîte de dialogue : ne détruit plus le fil d'état ni le hint.
             MaterialAlertDialogBuilder(this)
@@ -137,7 +189,9 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 status.setOnClickListener(null)
                 status.isClickable = false
-                if (resultCard.visibility != View.VISIBLE) showIdle()
+                // Ne pas écraser le message posé par le retour de scan (une seule fois).
+                if (resultCard.visibility != View.VISIBLE && !statusSetByScan) showIdle()
+                statusSetByScan = false
                 val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
                 val pending = PendingIntent.getActivity(this, 0, intent, flags)

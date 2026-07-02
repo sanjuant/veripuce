@@ -2,7 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <!-- Caméra optionnelle : le scan OCR est un confort, la saisie manuelle reste
+         possible -> ne pas restreindre l'installation aux appareils avec caméra. -->
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
         android:allowBackup="false"
@@ -29,5 +33,10 @@
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter" />
         </activity>
+
+        <!-- Scan OCR (CAN / MRZ) via CameraX + ML Kit, on-device. -->
+        <activity
+            android:name=".ScanActivity"
+            android:exported="false" />
     </application>
 </manifest>

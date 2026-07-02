@@ -84,6 +84,16 @@
                     android:letterSpacing="0.2"
                     android:maxLength="6" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/scanCan"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/scan_can_button"
+                app:icon="@drawable/ic_camera"
+                app:iconGravity="textStart" />
         </LinearLayout>
 
         <!-- Saisie passeport (clé MRZ) -->
@@ -159,6 +169,16 @@
                 android:text="@string/mrz_helper"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/scanMrz"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/scan_mrz_button"
+                app:icon="@drawable/ic_camera"
+                app:iconGravity="textStart" />
         </LinearLayout>
 
         <!-- Carte de statut -->
