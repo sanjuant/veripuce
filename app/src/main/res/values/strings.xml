@@ -35,7 +35,7 @@
     <string name="scan_can_button">Scanner le CAN</string>
     <string name="scan_mrz_button">Scanner la MRZ</string>
     <string name="scan_hint_can">Cadre le recto de la carte, bien à plat et éclairé — le CAN (6 chiffres) est détecté automatiquement.</string>
-    <string name="scan_hint_mrz">Cadre la bande MRZ (les lignes de caractères et &lt; en bas du document) — lecture validée par les chiffres de contrôle.</string>
+    <string name="scan_hint_mrz">Rapproche le téléphone : la bande MRZ (lignes de caractères et &lt; en bas du document) doit occuper toute la largeur de l\'écran, bien à plat et éclairée.</string>
     <string name="camera_denied">Caméra refusée — tu peux saisir les champs à la main.</string>
     <string name="camera_blocked">Caméra bloquée dans les réglages Android — saisis les champs à la main, ou réactive-la dans Paramètres &gt; Applications.</string>
     <string name="camera_unavailable">Caméra indisponible sur cet appareil — saisis les champs à la main.</string>

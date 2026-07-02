@@ -109,4 +109,8 @@ dependencies {
     // Coordonnée d'origine "com.gemalto.jp2:jp2-android:1.0" introuvable (Maven/Google/JitPack).
     // Miroir Maven Central de JP2ForAndroid, même package com.gemalto.jp2.* + libs natives.
     implementation("io.github.CshtZrgk:jp2-android:1.0.0")
+
+    // Tests JVM (MrzOcr est du Kotlin pur, sans dépendance Android)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.21")
 }

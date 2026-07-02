@@ -104,14 +104,15 @@ class ScanActivity : AppCompatActivity() {
                 val preview = Preview.Builder().build().also {
                     it.setSurfaceProvider(findViewById<PreviewView>(R.id.preview).surfaceProvider)
                 }
-                // 640x480 par défaut est trop bas pour une MRZ TD3 (44 caractères) :
-                // viser 1280x720 (ou le plus proche supporté).
+                // Une MRZ TD3 fait 44 caractères : en téléphone portrait, elle s'étale
+                // sur la PETITE dimension de l'image d'analyse. À 720p cela donne
+                // ~13 px/caractère — trop bas pour l'OCR-B. Viser 1080p.
                 val analysis = ImageAnalysis.Builder()
                     .setResolutionSelector(
                         ResolutionSelector.Builder()
                             .setResolutionStrategy(
                                 ResolutionStrategy(
-                                    Size(1280, 720),
+                                    Size(1920, 1080),
                                     ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
                                 )
                             )
@@ -140,7 +141,16 @@ class ScanActivity : AppCompatActivity() {
         }
         val image = InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees)
         recognizer.process(image)
-            .addOnSuccessListener { result -> onText(result.text) }
+            .addOnSuccessListener { result ->
+                // L'ordre des blocs ML Kit n'est pas garanti : reconstruire le texte
+                // avec les lignes triées de haut en bas (essentiel pour la MRZ TD1,
+                // dont le n° de document précède les dates).
+                val sorted = result.textBlocks
+                    .flatMap { it.lines }
+                    .sortedBy { it.boundingBox?.top ?: 0 }
+                    .joinToString("\n") { it.text }
+                onText(sorted)
+            }
             .addOnCompleteListener { proxy.close() } // libère l'image dans tous les cas
     }
 

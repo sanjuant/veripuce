@@ -5,10 +5,18 @@ package fr.veridoc.app
  *
  * - MRZ (passeport TD3, CNIe 2021 TD1, anciens formats TD2) : la MRZ est CONÇUE pour
  *   l'OCR — chaque champ utile (n° document, naissance, expiration) porte un chiffre de
- *   contrôle ICAO 9303. On n'accepte une lecture que si les trois checks passent, ce qui
+ *   contrôle ICAO 9303. On n'accepte une lecture que si tous les checks passent, ce qui
  *   élimine quasi totalement les faux positifs.
- * - CAN (CNIe) : 6 chiffres imprimés au recto, sans checksum -> on exige en plus une
- *   stabilité inter-images côté appelant ([ScanActivity]).
+ *
+ *   ML Kit fragmente fréquemment une ligne MRZ en plusieurs « lignes » OCR (les blocs
+ *   de `<` créent des coupures) : parser ligne à ligne ne matche alors jamais. On
+ *   travaille donc sur le TEXTE JOINT (tous blocs concaténés, seuls [A-Z0-9<]
+ *   conservés) avec une recherche NON ancrée — les chiffres de contrôle font office
+ *   de filtre anti-faux-positif (≈1/1000 par champ, x3 champs, + plausibilité de date
+ *   + stabilité inter-images côté [ScanActivity]).
+ *
+ * - CAN (CNIe) : 6 chiffres imprimés au recto, sans checksum -> détection ligne à
+ *   ligne (valeur isolée) + stabilité inter-images côté appelant.
  */
 object MrzOcr {
 
@@ -18,15 +26,19 @@ object MrzOcr {
         val dateOfExpiry: String,  // AAMMJJ
     )
 
-    // TD3 (2 lignes de 44) et TD2 (2 lignes de 36) : doc(9) ck nat(3) ddn(6) ck sexe exp(6) ck.
-    private val TD3_LINE2 = Regex("^([A-Z0-9<]{9})([0-9O])([A-Z<]{3})([0-9OIZSB]{6})([0-9O])([MF<X])([0-9OIZSB]{6})([0-9O])")
+    // Classes tolérantes aux confusions OCR en position numérique (re-normalisées par
+    // fixDigits avant validation) : O/Q->0, I->1, Z->2, S->5, B->8.
+    private const val D = "[0-9OQIZSB]"
 
-    // TD1 (3 lignes de 30, CNIe 2021) : ligne 1 = code doc(2) état(3) doc(9) ck ; ligne 2 = ddn(6) ck sexe exp(6) ck.
-    private val TD1_LINE1 = Regex("^[ACI][A-Z<][A-Z<]{3}([A-Z0-9<]{9})([0-9O])")
-    private val TD1_LINE2 = Regex("^([0-9OIZSB]{6})([0-9O])([MF<X])([0-9OIZSB]{6})([0-9O])")
+    // TD3 (passeport, ligne 2) et TD2 : doc(9) ck nat(3) ddn(6) ck sexe exp(6) ck.
+    // Non ancré : recherché n'importe où dans le texte joint.
+    private val TD3_SEQ = Regex("([A-Z0-9<]{9})($D)([A-Z<]{3})($D{6})($D)([MF<XK])($D{6})($D)")
 
-    // Lookarounds alphanumériques : exclut les runs de 6 chiffres à l'intérieur d'un
-    // n° de document type "F6G123456" (pas seulement les runs bordés de chiffres).
+    // TD1 (CNIe 2021) : « ligne 1 » = code doc(2) état(3) doc(9) ck ; « ligne 2 » =
+    // ddn(6) ck sexe exp(6) ck. Appariés par fenêtre de proximité dans le texte joint.
+    private val TD1_DOC = Regex("[ACI][A-Z<][A-Z<]{3}([A-Z0-9<]{9})($D)")
+    private val TD1_DATES = Regex("($D{6})($D)([MF<XK])($D{6})($D)")
+
     private val CAN_6_DIGITS = Regex("(?<![0-9A-Z])[0-9]{6}(?![0-9A-Z])")
 
     /**
@@ -35,14 +47,19 @@ object MrzOcr {
      * l'image suivante.
      */
     fun findMrz(rawText: String): MrzData? {
-        val lines = rawText.uppercase()
-            .split('\n')
-            .map { it.replace(" ", "").replace("«", "<") }
-            .filter { it.length >= 15 }
+        // Texte joint : seuls les caractères MRZ survivent (espaces, retours ligne et
+        // bruit OCR retirés) -> immunisé contre la fragmentation ML Kit.
+        val joined = rawText.uppercase()
+            .replace('«', '<')
+            .filter { it in 'A'..'Z' || it in '0'..'9' || it == '<' }
 
-        // TD3/TD2 : tout est sur une seule ligne.
-        for (line in lines) {
-            val m = TD3_LINE2.find(line) ?: continue
+        // NB : balayage position par position (matchAt) et non findAll — findAll est
+        // non chevauchant : un faux départ dans les '<' de la ligne 1 consommerait le
+        // début de la vraie séquence et la ferait rater.
+
+        // TD3/TD2 : séquence complète doc..exp, où qu'elle soit.
+        for (i in joined.indices) {
+            val m = TD3_SEQ.matchAt(joined, i) ?: continue
             val doc = m.groupValues[1]
             val dob = fixDigits(m.groupValues[4])
             val exp = fixDigits(m.groupValues[7])
@@ -53,18 +70,23 @@ object MrzOcr {
             }
         }
 
-        // TD1 : n° document ligne 1, dates ligne 2 — exiger des lignes ADJACENTES
-        // (même carte), chacune validée par ses chiffres de contrôle.
-        for (i in 0 until lines.size - 1) {
-            val m1 = TD1_LINE1.find(lines[i]) ?: continue
-            val m2 = TD1_LINE2.find(lines[i + 1]) ?: continue
+        // TD1 : doc et dates viennent de segments distincts -> exiger que les dates
+        // suivent le doc à distance plausible (ligne 1 = 30 chars, doc en position 5 :
+        // les dates démarrent ~25 chars après le doc ; fenêtre large pour le bruit OCR).
+        for (i in joined.indices) {
+            val m1 = TD1_DOC.matchAt(joined, i) ?: continue
             val doc = m1.groupValues[1]
-            val dob = fixDigits(m2.groupValues[1])
-            val exp = fixDigits(m2.groupValues[4])
-            if (checkOk(doc, m1.groupValues[2]) && checkOk(dob, m2.groupValues[2]) && checkOk(exp, m2.groupValues[5]) &&
-                plausibleDate(dob) && plausibleDate(exp)
-            ) {
-                return MrzData(doc.trimEnd('<'), dob, exp)
+            if (!checkOk(doc, m1.groupValues[2])) continue
+            val windowEnd = minOf(joined.length, m1.range.last + 46)
+            for (j in (m1.range.last + 1) until windowEnd) {
+                val m2 = TD1_DATES.matchAt(joined, j) ?: continue
+                val dob = fixDigits(m2.groupValues[1])
+                val exp = fixDigits(m2.groupValues[4])
+                if (checkOk(dob, m2.groupValues[2]) && checkOk(exp, m2.groupValues[5]) &&
+                    plausibleDate(dob) && plausibleDate(exp)
+                ) {
+                    return MrzData(doc.trimEnd('<'), dob, exp)
+                }
             }
         }
         return null
