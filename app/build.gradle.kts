@@ -11,8 +11,9 @@ android {
         applicationId = "fr.veridoc.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        // Surchargés en CI par le n° de run (VERSION_CODE) et le tag (VERSION_NAME).
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("VERSION_NAME") ?: "0.1"
     }
 
     compileOptions {
@@ -20,6 +21,30 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
+    // Signature de la release. La clé n'est JAMAIS dans le dépôt : elle vient de variables
+    // d'environnement (secrets GitHub en CI). Sans clé (build local ordinaire), la release
+    // sort simplement non signée — le debug, lui, reste auto-signé comme d'habitude.
+    val releaseStore = System.getenv("KEYSTORE_FILE")
+    signingConfigs {
+        create("release") {
+            if (releaseStore != null) {
+                storeFile = file(releaseStore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            // R8 désactivé volontairement : JMRTD / BouncyCastle / SCUBA reposent sur la
+            // réflexion ; activer le shrink sans règles -keep casserait la lecture à l'exécution.
+            isMinifyEnabled = false
+            signingConfig = if (releaseStore != null) signingConfigs.getByName("release") else null
+        }
+    }
 
     // Les jars BouncyCastle (bcprov/bcutil) embarquent des métadonnées identiques
     // (OSGi, licences) qui entrent en collision au packaging de l'APK. On les écarte.

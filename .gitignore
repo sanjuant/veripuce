@@ -8,3 +8,9 @@ build/
 .cxx/
 *.apk
 *.log
+
+# Clés de signature — ne JAMAIS committer
+*.jks
+*.keystore
+*.p12
+keystore.properties

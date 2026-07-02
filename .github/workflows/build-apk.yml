@@ -2,6 +2,8 @@ name: Build APK
 
 on:
   push:
+    branches:
+      - '**'   # sur les branches uniquement ; les tags v* déclenchent release.yml
   workflow_dispatch:   # permet aussi de lancer le build à la main depuis l'onglet Actions
 
 jobs:
