@@ -1,7 +1,8 @@
-# Lecteur CNIe Android (squelette)
+# Lecteur eID Android — CNIe & passeport (NFC)
 
 Portage de la logique de `cnie-python-tools` vers Android, en lecture **NFC** (sans
-matériel externe) au lieu d'un lecteur PC/SC à contact.
+matériel externe) au lieu d'un lecteur PC/SC à contact. Lit la **CNIe française** (PACE-CAN)
+et les **passeports** biométriques (PACE-MRZ / BAC).
 
 ## Idée
 
@@ -13,6 +14,25 @@ librairie **JMRTD**, qui tourne sur Android. On ne réimplémente donc que :
 - le **transport** : `IsoDep` (NFC natif Android) à la place de la couche PC/SC ;
 - éventuellement le **DG13** (spécifique France : adresse, taille, lieu de naissance),
   que JMRTD ne parse pas nativement — à porter depuis le code de Hubert.
+
+## CNIe **et** passeport
+
+Un passeport biométrique est un eMRTD ICAO 9303 exactement comme la CNIe — c'est le
+document pour lequel JMRTD a été écrit. La seule différence est la **clé d'accès** :
+
+| Document      | Ouverture de session                     | Saisie utilisateur                          |
+|---------------|------------------------------------------|---------------------------------------------|
+| CNIe (France) | **PACE-CAN**                             | CAN — 6 chiffres au recto                   |
+| Passeport     | **PACE-MRZ** (repli **BAC** si legacy)   | n° document + naissance + expiration (AAMMJJ)|
+
+Une fois la session ouverte, **DG1 (MRZ)**, **DG2 (photo)** et **EF.SOD** se lisent de
+façon identique ; le **DG13** est propre à la France et sera simplement absent d'un
+passeport. Le choix de mode se fait dans l'UI ; le code de clé est dans
+[`AccessKey.kt`](app/src/main/java/fr/example/cnie/AccessKey.kt) et l'ouverture de session
+dans `CnieReader.openWithCan` / `openWithMrz`.
+
+L'interface est en **Material 3** (thème clair/sombre, sélecteur de mode, carte résultat
+avec photo, et chips d'état pour l'intégrité et la signature).
 
 ## Ce qui compte vraiment pour de l'anti-fraude
 
@@ -90,12 +110,17 @@ Points à assumer honnêtement en réunion :
 app/src/main/
 ├── AndroidManifest.xml
 ├── java/fr/example/cnie/
-│   ├── MainActivity.kt      # dispatch NFC, saisie CAN, lancement lecture
-│   ├── CnieReader.kt        # PACE-CAN + lecture DG1/DG2 + passive auth (intégrité)
-│   └── ReadResult.kt        # résultat structuré
+│   ├── MainActivity.kt      # UI Material 3, sélecteur de mode, dispatch NFC, lancement lecture
+│   ├── AccessKey.kt         # clé d'accès : Can(can) pour la CNIe, Mrz(...) pour le passeport
+│   ├── CnieReader.kt        # PACE-CAN / PACE-MRZ+BAC + lecture DG1/DG2/DG13 + passive auth
+│   ├── ReadResult.kt        # résultat structuré
+│   ├── BerTlv.kt / Dg13*.kt # parsing DG13 (spécifique France)
+│   └── ...
 └── res/
-    ├── layout/activity_main.xml
-    └── xml/nfc_tech_filter.xml   # filtre IsoDep
+    ├── layout/activity_main.xml       # écran Material 3 (modes, statut, carte résultat)
+    ├── values/ (themes, colors, strings) + values-night/colors.xml
+    ├── drawable/ic_*.xml              # icônes modes + états
+    └── xml/nfc_tech_filter.xml        # filtre IsoDep
 ```
 
 ## Compilation (deux options)
