@@ -39,7 +39,9 @@ object Dg13Parser {
                 TAG_TAGLIST ->
                     presentTags = BerTlv.parseTagList(node.value).map { formatTag(it) }
                 TAG_HEIGHT ->
-                    height = decodeCniText(node.value).toIntOrNull()
+                    // decodeCniParts isole la valeur numérique même si le champ est
+                    // rembourré par des '<' (ex. "175<<" ou "<175").
+                    height = decodeCniParts(node.value).firstOrNull()?.toIntOrNull()
                 TAG_ADDRESS ->
                     address = decodeAddress(node.value)
                 TAG_BIRTH_PLACE ->
@@ -79,11 +81,13 @@ object Dg13Parser {
         )
     }
 
-    /** Champs texte CNI : ASCII (octets hors ASCII remplacés), '<' séparateur/remplissage. */
+    /**
+     * Champs texte CNI : Latin-1 (ISO-8859-1), '<' séparateur/remplissage, padding NUL.
+     * Décodage octet non signé -> code point U+0000..U+00FF : couvre é è à ç î ô û…
+     * (un Byte Kotlin est signé — tester b >= 0 écraserait tous les accents en U+FFFD).
+     */
     private fun decodeCniText(value: ByteArray): String =
-        buildString {
-            for (b in value) append(if (b >= 0) b.toInt().toChar() else '\uFFFD')
-        }.trim('\u0000')
+        String(value, Charsets.ISO_8859_1).trim('\u0000')
 
     private fun decodeCniParts(value: ByteArray): List<String> =
         decodeCniText(value).split('<').map { it.trim() }.filter { it.isNotEmpty() }

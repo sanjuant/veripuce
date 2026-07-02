@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,12 +7,12 @@ plugins {
 
 android {
     namespace = "fr.veridoc.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "fr.veridoc.app"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 24   // ~97 % du parc ; les AndroidX récentes exigent >= 23
+        targetSdk = 36
         // Surchargés en CI par le n° de run (VERSION_CODE) et le tag (VERSION_NAME).
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1"
@@ -20,7 +22,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 
     // Signature de la release. La clé n'est JAMAIS dans le dépôt : elle vient de variables
     // d'environnement (secrets GitHub en CI). Sans clé (build local ordinaire), la release
@@ -62,7 +63,17 @@ android {
                 "META-INF/*.RSA",
             )
         }
+        jniLibs {
+            // Le .so prébuilt du décodeur JP2 n'est pas strippable par le NDK
+            // ("Unable to strip ... libopenjpeg.so") — on le conserve tel quel, sans warning.
+            keepDebugSymbols += "**/libopenjpeg.so"
+        }
     }
+}
+
+// Remplace l'ancien android.kotlinOptions (déprécié en Kotlin 2.x).
+kotlin {
+    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
 base {
@@ -71,19 +82,20 @@ base {
 }
 
 dependencies {
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    // 1.18.0 = dernière version pour compileSdk 36 (1.19+ exige l'API 37 et AGP 9.1).
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
+    implementation("com.google.android.material:material:1.14.0")
 
     // Lecture eMRTD / eID (PACE, Secure Messaging, parsing des data groups, SOD)
-    implementation("org.jmrtd:jmrtd:0.7.42")               // vérifier la dernière version
+    implementation("org.jmrtd:jmrtd:0.8.6")                // dernière version stable
     implementation("net.sf.scuba:scuba-sc-android:0.0.26") // transport SCUBA pour Android
 
     // Crypto : courbes Brainpool, AES-CMAC… (voir le remplacement du provider BC au démarrage)
-    // Aligné sur la variante que JMRTD tire en transitif (bcprov-jdk18on) pour éviter le
-    // "Duplicate class" entre jdk15to18 et jdk18on. 1.78.1 écrase le 1.78 transitif.
-    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    // Aligné sur la version que JMRTD 0.8.6 tire en transitif (bcprov/bcpkix 1.84) pour
+    // éviter tout mélange de versions BC dans l'APK.
+    implementation("org.bouncycastle:bcprov-jdk18on:1.84")
 
     // Décodage JPEG 2000 de la photo (Android n'a pas javax.imageio)
     // Coordonnée d'origine "com.gemalto.jp2:jp2-android:1.0" introuvable (Maven/Google/JitPack).

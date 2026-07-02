@@ -1,6 +1,7 @@
 package fr.veridoc.app
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.nfc.tech.IsoDep
 import com.gemalto.jp2.JP2Decoder
 import net.sf.scuba.smartcards.CardService
@@ -8,10 +9,13 @@ import org.jmrtd.BACKey
 import org.jmrtd.PACEKeySpec
 import org.jmrtd.PassportService
 import org.jmrtd.lds.CardAccessFile
+import org.jmrtd.lds.ImageInfo
 import org.jmrtd.lds.PACEInfo
 import org.jmrtd.lds.SODFile
 import org.jmrtd.lds.icao.DG1File
 import org.jmrtd.lds.icao.DG2File
+import org.jmrtd.lds.iso19794.FaceInfo
+import org.jmrtd.lds.iso39794.FaceImageDataBlock
 import java.security.MessageDigest
 
 /**
@@ -55,34 +59,48 @@ class CnieReader {
             //    puis on parse depuis ces mêmes octets. Important pour la passive auth :
             //    le SOD signe les octets bruts ; hacher une re-sérialisation (DGxFile.encoded)
             //    peut différer octet-pour-octet et faire échouer l'intégrité d'un vrai document.
-            val dg1Bytes = svc.getInputStream(PassportService.EF_DG1).readBytes()
-            val dg2Bytes = svc.getInputStream(PassportService.EF_DG2).readBytes()
+            val dg1Bytes = svc.getInputStream(PassportService.EF_DG1, PassportService.DEFAULT_MAX_BLOCKSIZE).readBytes()
+            val dg2Bytes = svc.getInputStream(PassportService.EF_DG2, PassportService.DEFAULT_MAX_BLOCKSIZE).readBytes()
             val dg1 = DG1File(dg1Bytes.inputStream())
             val dg2 = DG2File(dg2Bytes.inputStream())
 
             val mrz = dg1.mrzInfo
 
-            // Photo : DG2 -> FaceImageInfo -> bytes (JPEG 2000 le plus souvent). Une photo
-            // absente/illisible ne doit pas faire échouer toute la lecture -> firstOrNull +
-            // runCatching. Décodage via Gemalto (Android n'a pas javax.imageio).
-            val photo: Bitmap? = dg2.faceInfos.firstOrNull()
-                ?.faceImageInfos?.firstOrNull()
-                ?.let { info ->
-                    runCatching { JP2Decoder(info.imageInputStream.readBytes()).decode() }.getOrNull()
+            // Photo : DG2 encode l'image en ISO 19794 (FaceInfo, documents actuels) ou
+            // ISO 39794 (FaceImageDataBlock, passeports récents). Les deux exposent
+            // l'interface ImageInfo -> extraction unifiée via subRecords (getFaceInfos()
+            // est déprécié car aveugle au format 39794). Une photo absente/illisible ne
+            // doit pas faire échouer la lecture -> firstOrNull + runCatching.
+            val imageInfo: ImageInfo? = dg2.subRecords.asSequence()
+                .flatMap { block ->
+                    when (block) {
+                        is FaceInfo -> block.faceImageInfos.asSequence()           // ISO 19794
+                        is FaceImageDataBlock -> block.representationBlocks.asSequence() // ISO 39794
+                        else -> emptySequence()
+                    }
                 }
+                .firstOrNull()
+            val photo: Bitmap? = imageInfo?.let { info ->
+                runCatching {
+                    val bytes = info.imageInputStream.readBytes()
+                    // JPEG 2000 (cas usuel) via Gemalto, sinon repli JPEG/PNG natif.
+                    runCatching { JP2Decoder(bytes).decode() }.getOrNull()
+                        ?: BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                }.getOrNull()
+            }
 
             // DG13 : spécifique France (adresse, taille, lieu de naissance). Absent d'un
             // passeport — le runCatching renverra alors simplement null.
             // NB : si EF_DG13 n'existe pas comme constante dans ta version, utilise 0x010D.
             val dg13Bytes: ByteArray? = runCatching {
-                svc.getInputStream(PassportService.EF_DG13).readBytes()
+                svc.getInputStream(PassportService.EF_DG13, PassportService.DEFAULT_MAX_BLOCKSIZE).readBytes()
             }.getOrNull()
             val dg13: Dg13? = dg13Bytes?.let { runCatching { Dg13Parser.parse(it) }.getOrNull() }
 
             // 4) Passive authentication — le cœur anti-fraude.
             //    (a) intégrité : les hashs recalculés des DG (octets bruts) doivent
             //        correspondre à ceux, signés, stockés dans le SOD.
-            val sod = SODFile(svc.getInputStream(PassportService.EF_SOD))
+            val sod = SODFile(svc.getInputStream(PassportService.EF_SOD, PassportService.DEFAULT_MAX_BLOCKSIZE))
             val integrityOk = verifyDataGroupHashes(
                 sod,
                 buildMap {
@@ -125,7 +143,7 @@ class CnieReader {
         require(can.length == 6 && can.all { it.isDigit() }) { "Le CAN doit faire 6 chiffres." }
 
         // EF.CardAccess donne l'OID PACE et les paramètres de domaine (BrainpoolP256r1 sur la CNI).
-        val cardAccess = CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS))
+        val cardAccess = CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS, PassportService.DEFAULT_MAX_BLOCKSIZE))
         val paceInfo = cardAccess.securityInfos.filterIsInstance<PACEInfo>().first()
 
         val canKey = PACEKeySpec.createCANKey(can)
@@ -148,7 +166,7 @@ class CnieReader {
         val bacKey = BACKey(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry)
 
         val cardAccess = runCatching {
-            CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS))
+            CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS, PassportService.DEFAULT_MAX_BLOCKSIZE))
         }.getOrNull()
         val paceInfo = cardAccess?.securityInfos?.filterIsInstance<PACEInfo>()?.firstOrNull()
 
@@ -171,7 +189,8 @@ class CnieReader {
     private fun verifyDataGroupHashes(sod: SODFile, dgRaw: Map<Int, ByteArray>): Boolean {
         val md = MessageDigest.getInstance(sod.digestAlgorithm) // ex. "SHA-256"
         val stored = sod.dataGroupHashes
-        return dgRaw.all { (num, bytes) ->
+        // isNotEmpty() : une map vide doit être un ÉCHEC (fail-closed), pas un "tout va bien".
+        return dgRaw.isNotEmpty() && dgRaw.all { (num, bytes) ->
             md.reset()
             stored[num]?.contentEquals(md.digest(bytes)) == true
         }

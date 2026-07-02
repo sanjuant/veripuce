@@ -11,6 +11,9 @@ build/
 
 # Clés de signature — ne JAMAIS committer
 *.jks
+*.jks.*
 *.keystore
 *.p12
+*.b64
 keystore.properties
+*credentials*

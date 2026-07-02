@@ -62,11 +62,15 @@ logicielle ne contourne ça.
 ## Dépendances (app/build.gradle.kts)
 
 ```kotlin
-implementation("org.jmrtd:jmrtd:0.7.42")                 // vérifie la dernière version
+implementation("org.jmrtd:jmrtd:0.8.6")                  // eMRTD : PACE/BAC, LDS, SOD (+ ISO 39794)
 implementation("net.sf.scuba:scuba-sc-android:0.0.26")   // transport SCUBA pour Android
-implementation("org.bouncycastle:bcprov-jdk15to18:1.78.1") // crypto (Brainpool, CMAC)
-implementation("com.gemalto.jp2:jp2-android:1.0")        // décodage JPEG 2000 de la photo
+implementation("org.bouncycastle:bcprov-jdk18on:1.84")   // crypto (aligné sur le transitif JMRTD)
+implementation("io.github.CshtZrgk:jp2-android:1.0.0")   // décodage JPEG 2000 (miroir JP2ForAndroid)
 ```
+
+Chaîne de build : AGP 8.13.2 · Kotlin 2.3.21 · Gradle 8.14.3 (wrapper) · compileSdk/targetSdk 36
+· minSdk 24. Le passage à AGP 9.x (Kotlin intégré, Gradle 9.1+, API 37) est l'étape suivante
+naturelle quand l'écosystème AndroidX l'exigera.
 
 Gotchas connus :
 

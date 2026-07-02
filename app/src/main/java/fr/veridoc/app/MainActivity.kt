@@ -15,6 +15,9 @@ import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -61,6 +64,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Edge-to-edge (targetSdk 35+) : décaler le contenu des barres système/encoche.
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         // Remplacer le Bouncy Castle partiel d'Android par la version complète.
         Security.removeProvider("BC")
@@ -147,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         // concurrents sur le même canal IsoDep et l'écrasement d'un résultat déjà affiché.
         if (readJob?.isActive == true) return
 
-        val tag: Tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG) ?: return
+        val tag: Tag = IntentCompat.getParcelableExtra(intent, NfcAdapter.EXTRA_TAG, Tag::class.java) ?: return
         val isoDep = IsoDep.get(tag) ?: run {
             setStatus(getString(R.string.not_isodep), R.drawable.ic_state_error, R.color.on_bad_container); return
         }
