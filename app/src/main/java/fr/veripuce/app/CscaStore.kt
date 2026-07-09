@@ -30,6 +30,13 @@ class CscaStore private constructor(val certificates: List<X509Certificate>) {
         private val PEM_BLOCK =
             Regex("-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\\r\\n\\s]+)-----END CERTIFICATE-----")
 
+        // Instance BC explicite : même comportement sur Android et en test JVM, sans
+        // dépendre de l'enregistrement global du provider. Unique (un fichier par
+        // certificat -> parse() est appelé des centaines de fois).
+        private val certFactory: CertificateFactory by lazy {
+            CertificateFactory.getInstance("X.509", BouncyCastleProvider())
+        }
+
         fun load(context: Context): CscaStore {
             val certs = ArrayList<X509Certificate>()
             runCatching {
@@ -48,9 +55,7 @@ class CscaStore private constructor(val certificates: List<X509Certificate>) {
          * les illisibles sont ignorés) ou DER brut (un certificat).
          */
         fun parse(bytes: ByteArray): List<X509Certificate> {
-            // Instance BC explicite : même comportement sur Android et en test JVM,
-            // sans dépendre de l'enregistrement global du provider.
-            val cf = CertificateFactory.getInstance("X.509", BouncyCastleProvider())
+            val cf = certFactory
             val text = bytes.toString(Charsets.ISO_8859_1)
             if ("-----BEGIN CERTIFICATE-----" !in text) {
                 return listOfNotNull(

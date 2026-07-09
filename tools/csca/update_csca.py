@@ -1,4 +1,11 @@
-"""Régénère app/src/main/assets/csca/csca-trusted.pem depuis les sources officielles.
+"""Régénère le magasin CSCA (app/src/main/assets/csca/) depuis les sources officielles.
+
+Sortie AUDITABLE : un fichier PEM par certificat, nommé
+    <pays>_<CN>_<sources>_<sha256 tronqué>.pem      (ex. FR_CSCA-FRANCE_icao-bsi-ants_d628b510.pem)
+chaque fichier portant en tête sujet, émetteur, série, validité, empreinte SHA-256
+complète et sources exactes (édition de masterlist / URL ANTS) ; plus un MANIFEST.tsv
+récapitulatif — le diff git d'une mise à jour montre précisément quels certificats
+entrent et sortent, et chaque certificat est justifiable individuellement.
 
 Usage :  python tools/csca/update_csca.py            (depuis la racine du dépôt)
 Prérequis : python 3.10+, `pip install cryptography requests`, openssl dans le PATH.
@@ -21,8 +28,8 @@ Garde-fous :
     ferait rejeter tout le bundle par CertificateFactory sur Android).
   - Les certificats de TEST de l'ANTS ne sont jamais inclus.
 """
-import base64
 import collections
+import datetime
 import hashlib
 import io
 import re
@@ -38,7 +45,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives.serialization import Encoding
 
 REPO = Path(__file__).resolve().parents[2]
-OUT = REPO / "app/src/main/assets/csca/csca-trusted.pem"
+OUT_DIR = REPO / "app/src/main/assets/csca"
 
 ICAO_DISCOVERY = "https://www.icao.int/sites/default/files/Security/FAL/Consent_Google_ReCaptcha_new.html"
 ICAO_BASE = "https://www.icao.int/sites/default/files/Security/FAL/"
@@ -126,6 +133,15 @@ def zip_members(data, suffix):
         return {n: z.read(n) for n in z.namelist() if n.lower().endswith(suffix)}
 
 
+def sanitize(s, maxlen=40):
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", s).strip("-.")[:maxlen] or "sans-nom"
+
+
+def cn_of(name_obj):
+    return next((a.value for a in name_obj.get_attributes_for_oid(NameOID.COMMON_NAME)), None) \
+        or (name_obj.rdns and name_obj.rdns[0].rfc4514_string()) or "sans-CN"
+
+
 def main():
     print("== 1/4 Téléchargements ==")
     consent = requests.get(ICAO_DISCOVERY, headers=UA, timeout=60).text
@@ -164,32 +180,77 @@ def main():
         if name.startswith("CSCA-FRANCE") and name >= "CSCA-FRANCE_2015" and not where:
             sys.exit(f"ERREUR: {name} absent des masterlists ICAO et BSI — canal ANTS suspect, dépôt refusé")
 
-    print("== 4/4 Dédup, validation stricte, écriture ==")
-    seen, kept, bad = set(), [], 0
+    print("== 4/4 Dédup, validation stricte, écriture (1 fichier PEM par certificat) ==")
+    today = datetime.date.today().isoformat()
+    icao_name = m.group(0).split("/")[-1]
+    source_detail = {
+        "icao": f"masterlist ICAO {icao_name} ({ICAO_BASE}{m.group(0)})",
+        "bsi": f"masterlist BSI {bsi_name} ({BSI_ZIP})",
+    }
+    ants_by_hash = {hashlib.sha256(der).hexdigest(): name for name, der in ants_ders.items()}
+
+    seen, kept, bad = {}, [], 0
     countries = collections.Counter()
     for der in icao_certs + bsi_certs + list(ants_ders.values()):
-        h = hashlib.sha256(der).digest()
+        h = hashlib.sha256(der).hexdigest()
+        sources = [s for s, hs in (("icao", icao_h), ("bsi", bsi_h)) if h in hs]
+        if h in ants_by_hash:
+            sources.append("ants")
         if h in seen:
             continue
-        seen.add(h)
+        seen[h] = True
         try:
             cert = x509.load_der_x509_certificate(der)
-            c = next((a.value for a in cert.subject.get_attributes_for_oid(NameOID.COUNTRY_NAME)), "??")
+            c = next((a.value for a in cert.subject.get_attributes_for_oid(NameOID.COUNTRY_NAME)), "XX")
         except Exception:
             bad += 1
             continue
         countries[c] += 1
-        kept.append(cert)
+        kept.append((c, cert, h, sources))
 
     if countries["FR"] < 5:
         sys.exit(f"ERREUR: seulement {countries['FR']} certs FR (>=5 attendus) — dépôt refusé")
 
-    with open(OUT, "wb") as f:
-        for cert in kept:
-            f.write(cert.public_bytes(Encoding.PEM))
-    print(f"\n{OUT}")
+    # Le script possède les .pem et le manifest du dossier (README.txt est préservé).
+    for old in list(OUT_DIR.glob("*.pem")) + [OUT_DIR / "MANIFEST.tsv"]:
+        if old.exists():
+            old.unlink()
+
+    kept.sort(key=lambda t: (t[0], cn_of(t[1].subject), t[1].not_valid_before_utc, t[2]))
+    manifest = [
+        f"# Magasin CSCA — généré le {today} par tools/csca/update_csca.py",
+        f"# Éditions : {source_detail['icao']}",
+        f"#            {source_detail['bsi']}",
+        f"#            ANTS : {', '.join(f'{n} ({u})' for n, u in ANTS.items())}",
+        "fichier\tpays\tsujet\tvalide_du\tvalide_au\tsha256\tsources",
+    ]
+    used_names = set()
+    for country, cert, h, sources in kept:
+        fname = f"{sanitize(country, 8)}_{sanitize(cn_of(cert.subject))}_{'-'.join(sources)}_{h[:8]}.pem"
+        if fname.lower() in used_names:  # collision de préfixe SHA (improbable) -> empreinte longue
+            fname = fname.replace(f"_{h[:8]}.pem", f"_{h[:16]}.pem")
+        used_names.add(fname.lower())
+        detail = [source_detail.get(s) or f"ANTS {ants_by_hash[h]} ({ANTS[ants_by_hash[h]]})" for s in sources]
+        header = (
+            f"# Certificat CSCA — ancre de confiance passive authentication (ICAO 9303-11)\n"
+            f"# Sujet      : {cert.subject.rfc4514_string()}\n"
+            f"# Émetteur   : {cert.issuer.rfc4514_string()}\n"
+            f"# Série      : {cert.serial_number:#x}\n"
+            f"# Validité   : {cert.not_valid_before_utc:%Y-%m-%d} -> {cert.not_valid_after_utc:%Y-%m-%d}\n"
+            f"# SHA-256    : {h}\n"
+            + "".join(f"# Source     : {d}\n" for d in detail)
+            + f"# Téléchargé : {today} (voir MANIFEST.tsv et README.txt)\n"
+        )
+        (OUT_DIR / fname).write_bytes(header.encode() + cert.public_bytes(Encoding.PEM))
+        manifest.append(
+            f"{fname}\t{country}\t{cert.subject.rfc4514_string()}\t"
+            f"{cert.not_valid_before_utc:%Y-%m-%d}\t{cert.not_valid_after_utc:%Y-%m-%d}\t{h}\t{'+'.join(sources)}"
+        )
+    (OUT_DIR / "MANIFEST.tsv").write_text("\n".join(manifest) + "\n", encoding="utf-8", newline="\n")
+
+    print(f"\n{OUT_DIR}")
     print(f"{len(kept)} certificats uniques ({bad} illisibles écartés), FR={countries['FR']}, "
-          f"{OUT.stat().st_size} octets")
+          f"{len(list(OUT_DIR.glob('*.pem')))} fichiers .pem + MANIFEST.tsv")
     print("Pensez à mettre à jour la date et les éditions dans assets/csca/README.txt,")
     print("puis lancez les tests : ./gradlew testDebugUnitTest")
 

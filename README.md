@@ -81,10 +81,13 @@ Quatre vérifications indépendantes, reflétées par les chips de l'écran de r
 
 ### Magasin de confiance CSCA embarqué
 
-L'app embarque **773 certificats CSCA** (`assets/csca/csca-trusted.pem`), union dédupliquée de
-trois sources officielles indépendantes : la **masterlist ICAO**, la **masterlist BSI** (Allemagne)
-et les certificats **ANTS** (CSCA-FRANCE 2010→2025 + **eID-FRANCE** pour la CNIe, absente des
-masterlists « voyage »). Les CSCA françaises ont été **recoupées octet-pour-octet** entre les
+L'app embarque **773 certificats CSCA** (`assets/csca/`, **un fichier PEM par certificat** pour
+l'auditabilité), union dédupliquée de trois sources officielles indépendantes : la **masterlist
+ICAO**, la **masterlist BSI** (Allemagne) et les certificats **ANTS** (CSCA-FRANCE 2010→2025 +
+**eID-FRANCE** pour la CNIe, absente des masterlists « voyage »). Chaque fichier est nommé
+`<pays>_<CN>_<sources>_<sha256>.pem` et porte en tête sa provenance exacte (édition de
+masterlist / URL, validité, empreinte) ; `MANIFEST.tsv` récapitule le magasin et rend chaque
+mise à jour diffable. Les CSCA françaises ont été **recoupées octet-pour-octet** entre les
 canaux au moment du dépôt. La signature du SOD est vérifiée (CMS), puis le certificat signataire
 (DSC) est chaîné jusqu'à une de ces CSCA : verdict **vert uniquement si l'origine étatique est
 prouvée** ; une signature valide sans chaîne connue reste neutre, une signature invalide est une
