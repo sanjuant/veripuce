@@ -85,6 +85,10 @@
     <string name="check_clone_ok">Puce authentique (non clonée)</string>
     <string name="check_clone_bad">Puce possiblement clonée&#160;!</string>
     <string name="check_origin_pending">Émission par l\'État : non vérifiée</string>
+    <string name="check_origin_ok">Émis par l\'État (signature vérifiée)</string>
+    <string name="check_origin_untrusted">Signature valide, autorité émettrice non reconnue</string>
+    <string name="check_origin_invalid">Signature invalide — document falsifié&#160;!</string>
+    <string name="result_trusted">Document authentique — émis par l\'État.</string>
     <string name="expired_badge">DOCUMENT EXPIRÉ</string>
     <string name="lbl_born">Né(e) le</string>
     <string name="lbl_expires">Expire le</string>

@@ -19,11 +19,14 @@ import org.jmrtd.lds.icao.DG14File
 import org.jmrtd.lds.icao.DG15File
 import org.jmrtd.lds.icao.DG1File
 import org.jmrtd.lds.icao.DG2File
+import org.bouncycastle.cms.CMSSignedData
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder
 import org.jmrtd.lds.iso19794.FaceInfo
 import org.jmrtd.lds.iso39794.FaceImageDataBlock
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.Signature
+import java.security.cert.X509Certificate
 
 /**
  * Lecture d'un document eMRTD (ICAO 9303) via NFC : CNIe française **ou** passeport.
@@ -38,7 +41,12 @@ class CnieReader {
      * @param expectedMrz MRZ lue optiquement (scan), pour la comparer à la puce (DG1).
      *                    null si aucune comparaison n'est demandée.
      */
-    fun read(isoDep: IsoDep, key: AccessKey, expectedMrz: MrzOcr.MrzData? = null): ReadResult {
+    fun read(
+        isoDep: IsoDep,
+        key: AccessKey,
+        expectedMrz: MrzOcr.MrzData? = null,
+        cscaCerts: Collection<X509Certificate> = emptyList(),
+    ): ReadResult {
         isoDep.timeout = 15_000
 
         val cardService = CardService.getInstance(isoDep)
@@ -84,8 +92,10 @@ class CnieReader {
             val dg14 = dg14Bytes?.let { runCatching { DG14File(it.inputStream()) }.getOrNull() }
             val dg15 = dg15Bytes?.let { runCatching { DG15File(it.inputStream()) }.getOrNull() }
 
-            // 3) Passive authentication (intégrité) : hashs recalculés == hashs signés du SOD.
-            val sod = SODFile(svc.getInputStream(PassportService.EF_SOD, PassportService.DEFAULT_MAX_BLOCKSIZE))
+            // 3) Passive authentication.
+            //    (a) intégrité : hashs recalculés == hashs signés du SOD.
+            val sodBytes = svc.getInputStream(PassportService.EF_SOD, PassportService.DEFAULT_MAX_BLOCKSIZE).readBytes()
+            val sod = SODFile(sodBytes.inputStream())
             val integrityOk = verifyDataGroupHashes(
                 sod,
                 buildMap {
@@ -96,8 +106,8 @@ class CnieReader {
                     dg15Bytes?.let { put(15, it) }
                 },
             )
-            // TODO: signature du SOD + chaîne DSC -> CSCA de confiance (ANTS / ICAO PKD).
-            val signatureVerified = false
+            //    (b) authenticité : signature du SOD par le DSC, DSC -> CSCA de confiance.
+            val signature = verifySodSignature(sodBytes, sod, cscaCerts)
 
             // 4) Cohérence MRZ imprimée (scan) <-> puce (DG1). PERTINENTE uniquement pour un
             //    accès CAN : la clé CAN est indépendante de la MRZ, donc un DG1 != scan est
@@ -127,7 +137,7 @@ class CnieReader {
                 photo = photo,
                 dg13 = dg13,
                 hashesMatchSod = integrityOk,
-                sodSignatureVerified = signatureVerified,
+                signature = signature,
                 mrzMatchesScan = mrzMatchesScan,
                 cloneCheck = cloneCheck,
                 cloneMethod = cloneMethod,
@@ -256,6 +266,42 @@ class CnieReader {
         }
 
         return CloneCheck.UNSUPPORTED to null
+    }
+
+    /**
+     * Vérifie la signature du SOD (CMS/PKCS#7) puis chaîne le DSC jusqu'à une CSCA de confiance.
+     *
+     * - Signature CMS invalide -> INVALID (document falsifié).
+     * - Signature valide mais DSC ne remonte à aucune CSCA chargée -> VALID_UNTRUSTED.
+     * - Signature valide + DSC signé par une CSCA de confiance -> TRUSTED (émis par l'État).
+     */
+    private fun verifySodSignature(
+        sodBytes: ByteArray,
+        sod: SODFile,
+        cscaCerts: Collection<X509Certificate>,
+    ): SignatureCheck {
+        val dsc = sod.docSigningCertificate ?: return SignatureCheck.NOT_CHECKED
+        val sigOk = runCatching {
+            // EF.SOD = tag 0x77 { ContentInfo CMS }. CMSSignedData attend la ContentInfo.
+            val contentInfo = BerTlv.parse(sodBytes).firstOrNull { it.tag == 0x77 }?.value ?: sodBytes
+            val cms = CMSSignedData(contentInfo)
+            val signer = cms.signerInfos.signers.firstOrNull() ?: return SignatureCheck.NOT_CHECKED
+            val verifier = JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(dsc)
+            // verify() contrôle la signature sur les signedAttrs ET que le message-digest
+            // signé correspond au contenu (le LDSSecurityObject = les hashs des DG).
+            signer.verify(verifier)
+        }.getOrElse { return SignatureCheck.NOT_CHECKED }
+        if (!sigOk) return SignatureCheck.INVALID
+        return if (chainToTrustedCsca(dsc, cscaCerts)) SignatureCheck.TRUSTED else SignatureCheck.VALID_UNTRUSTED
+    }
+
+    /** Le DSC est-il signé par une CSCA de confiance (émetteur correspondant + signature valide) ? */
+    private fun chainToTrustedCsca(dsc: X509Certificate, cscas: Collection<X509Certificate>): Boolean {
+        val issuer = dsc.issuerX500Principal
+        return cscas.any { csca ->
+            csca.subjectX500Principal == issuer &&
+                runCatching { dsc.verify(csca.publicKey); true }.getOrDefault(false)
+        }
     }
 
     /** Recalcule le hash de chaque DG (octets bruts) et le compare au hash signé du SOD. */

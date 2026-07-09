@@ -88,6 +88,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rowClone: View
     private lateinit var cloneIcon: ImageView
     private lateinit var cloneLabel: TextView
+    private lateinit var originIcon: ImageView
+    private lateinit var originLabel: TextView
+
+    /** Ancre de confiance CSCA (chargée depuis assets/csca/) pour prouver l'origine étatique. */
+    private var cscaCerts: Collection<java.security.cert.X509Certificate> = emptyList()
 
     /** Retour du scan OCR : MRZ -> détection ; CAN -> pré-remplit le champ CAN. */
     private val scanLauncher =
@@ -184,6 +189,9 @@ class MainActivity : AppCompatActivity() {
         rowClone = findViewById(R.id.rowClone)
         cloneIcon = findViewById(R.id.cloneIcon)
         cloneLabel = findViewById(R.id.cloneLabel)
+        originIcon = findViewById(R.id.originIcon)
+        originLabel = findViewById(R.id.originLabel)
+        cscaCerts = CscaStore.load(this).certificates
 
         val hasCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
         scanMrz.visibility = if (hasCamera) View.VISIBLE else View.GONE
@@ -302,7 +310,7 @@ class MainActivity : AppCompatActivity() {
         showReading()
         resultCard.visibility = View.GONE
         readJob = lifecycleScope.launch(Dispatchers.IO) {
-            val result = runCatching { CnieReader().read(isoDep, req.key, req.expectedMrz) }
+            val result = runCatching { CnieReader().read(isoDep, req.key, req.expectedMrz, cscaCerts) }
             withContext(Dispatchers.Main) {
                 result
                     .onSuccess { showResult(it) }
@@ -387,7 +395,13 @@ class MainActivity : AppCompatActivity() {
             CloneCheck.FAILED -> { rowClone.visibility = View.VISIBLE; setCheck(cloneIcon, cloneLabel, false, R.string.check_clone_bad, R.string.check_clone_bad) }
             CloneCheck.UNSUPPORTED -> rowClone.visibility = View.GONE
         }
-        // La ligne « Émission par l'État : non vérifiée » reste statique (roadmap CSCA).
+        // Origine : signature du SOD + chaîne jusqu'à une CSCA de confiance.
+        when (r.signature) {
+            SignatureCheck.TRUSTED -> setOrigin(R.drawable.ic_state_ok, R.color.on_ok_container, R.string.check_origin_ok, muted = false)
+            SignatureCheck.INVALID -> setOrigin(R.drawable.ic_state_error, R.color.on_bad_container, R.string.check_origin_invalid, muted = false)
+            SignatureCheck.VALID_UNTRUSTED -> setOrigin(R.drawable.ic_state_info, R.color.on_neutral_container, R.string.check_origin_untrusted, muted = true)
+            SignatureCheck.NOT_CHECKED -> setOrigin(R.drawable.ic_state_info, R.color.on_neutral_container, R.string.check_origin_pending, muted = true)
+        }
 
         photo.visibility = if (r.photo != null) View.VISIBLE else View.GONE
         r.photo?.let { photo.setImageBitmap(it) }
@@ -395,14 +409,29 @@ class MainActivity : AppCompatActivity() {
         resultCard.visibility = View.VISIBLE
 
         // Verdict global honnête à 3 états :
-        //  ROUGE = anomalie dure ; VERT = seulement si signature CSCA vérifiée (roadmap) ;
-        //  NEUTRE = contrôles internes OK mais origine non prouvée.
-        val hardFail = !r.hashesMatchSod || r.mrzMatchesScan == false || r.cloneCheck == CloneCheck.FAILED
+        //  ROUGE = anomalie dure (dont signature invalide) ; VERT = uniquement si l'origine
+        //  étatique est prouvée (DSC -> CSCA de confiance) ; NEUTRE = contrôles internes OK.
+        val hardFail = !r.hashesMatchSod || r.mrzMatchesScan == false ||
+            r.cloneCheck == CloneCheck.FAILED || r.signature == SignatureCheck.INVALID
         when {
             hardFail -> setStatus(getString(R.string.result_fail), R.drawable.ic_state_error, R.color.on_bad_container)
-            r.sodSignatureVerified -> setStatus(getString(R.string.done), R.drawable.ic_state_ok, R.color.on_ok_container)
+            r.signature == SignatureCheck.TRUSTED -> setStatus(getString(R.string.result_trusted), R.drawable.ic_state_ok, R.color.on_ok_container)
             else -> setStatus(getString(R.string.result_unverified), R.drawable.ic_state_info, R.color.on_neutral_container)
         }
+    }
+
+    /** Ligne « origine » : icône teintée + libellé (couleur atténuée pour les états non définitifs). */
+    private fun setOrigin(@DrawableRes icon: Int, @ColorRes tint: Int, @StringRes text: Int, muted: Boolean) {
+        originIcon.setImageResource(icon)
+        originIcon.setColorFilter(ContextCompat.getColor(this, tint))
+        originLabel.setText(text)
+        originLabel.setTextColor(
+            com.google.android.material.color.MaterialColors.getColor(
+                originLabel,
+                if (muted) com.google.android.material.R.attr.colorOnSurfaceVariant
+                else com.google.android.material.R.attr.colorOnSurface,
+            ),
+        )
     }
 
     // --- Statut (carte masquée au repos/détecté : les cartes de scan/détection portent le message) ---

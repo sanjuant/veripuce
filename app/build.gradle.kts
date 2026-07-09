@@ -104,6 +104,8 @@ dependencies {
     // Aligné sur la version que JMRTD 0.8.6 tire en transitif (bcprov/bcpkix 1.84) pour
     // éviter tout mélange de versions BC dans l'APK.
     implementation("org.bouncycastle:bcprov-jdk18on:1.84")
+    // bcpkix : CMS/PKCS#7 pour vérifier la signature du SOD (passive authentication étape 3).
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.84")
 
     // Décodage JPEG 2000 de la photo (Android n'a pas javax.imageio)
     // Coordonnée d'origine "com.gemalto.jp2:jp2-android:1.0" introuvable (Maven/Google/JitPack).
