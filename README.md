@@ -24,9 +24,10 @@ Aucun matériel externe : le téléphone sert de lecteur.
 - **Un seul geste : scanner la MRZ.** La bande MRZ (bas du document) est scannée à la caméra ;
   Veripuce en **déduit le type de document** — passeport, carte d'identité ou **titre de séjour** —
   d'après le code MRZ, et pré-remplit tout après validation des **chiffres de contrôle ICAO**.
-- **Ouverture de la puce** — passeport et **titre de séjour** : clé **PACE-MRZ** (repli **BAC**)
-  directement issue du scan, sans rien saisir. CNIe : **PACE-CAN** — le CAN (6 chiffres) est au
-  *recto*, il ne figure pas dans la MRZ, donc il reste demandé (saisi ou scanné).
+- **Ouverture de la puce** — tous documents : clé **PACE-MRZ** (repli **BAC**) directement
+  issue du scan, **sans rien saisir** — y compris les cartes d'identité (CNIe française,
+  CNIE marocaine… : ICAO 9303-11 impose l'acceptation du mot de passe MRZ). Si une carte
+  refuse la clé MRZ, le champ **CAN** (6 chiffres au recto) apparaît en repli.
 - **Repli robuste** — si la caméra est absente/cassée ou la lumière insuffisante : **lampe torche**
   intégrée, **saisie manuelle** (n° document + dates, ou CAN) toujours disponible, et bascule
   automatique vers la saisie si la caméra échoue.
@@ -46,9 +47,9 @@ Aucun matériel externe : le téléphone sert de lecteur.
       Scan MRZ (caméra, on-device)
             │  détection type + chiffres de contrôle ICAO
             ▼
-   ┌── Passeport ──► clé PACE-MRZ ─┐
-   │                               ├─► approcher la puce (NFC)
-   └── Carte (CNIe) ─► + CAN recto ┘
+   ┌── Passeport / titre de séjour ──► clé PACE-MRZ (repli BAC) ─┐
+   │                                                             ├─► approcher la puce (NFC)
+   └── Carte d'identité ──► clé PACE-MRZ (repli : CAN recto) ────┘
                                     │
    IsoDep ─► CardService (SCUBA) ─► PassportService (JMRTD)
                                     ├── DG1 (MRZ) · DG2 (photo) · DG13 (France)
@@ -59,7 +60,8 @@ Aucun matériel externe : le téléphone sert de lecteur.
 
 | Document | Ouverture de session | Clé d'accès |
 |---|---|---|
-| CNIe (France, 2021+) | PACE | **CAN** — 6 chiffres imprimés au recto (hors MRZ) |
+| CNIe (France, 2021+) | PACE (PACE-only, pas de BAC) | **MRZ** (scannée) — l'applet accepte MRZ *et* CAN ; CAN en repli |
+| Carte d'identité étrangère (ex. CNIE marocaine 2020+) | PACE | **MRZ** (scannée) — CAN en repli |
 | Titre de séjour | PACE / BAC | Clé dérivée de la **MRZ** (scannée) |
 | Passeport récent | PACE | Clé dérivée de la **MRZ** (scannée) |
 | Passeport ancien | BAC | Clé dérivée de la **MRZ** (scannée) |
@@ -225,5 +227,5 @@ Un bandeau « 100 % local » dans l'application ouvre le détail de ces garantie
 - [x] Cohérence MRZ optique ↔ puce (DG1)
 - [x] Détection de puce clonée (Chip / Active Authentication)
 - [x] Scan OCR du CAN et de la MRZ (on-device) + viseur de cadrage
-- [x] Support passeport (PACE-MRZ / BAC) et CNIe (PACE-CAN)
+- [x] Support passeport (PACE-MRZ / BAC) et cartes d'identité (PACE-MRZ, CAN en repli)
 - [x] Release signée automatisée (tag → GitHub Release)

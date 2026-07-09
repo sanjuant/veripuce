@@ -51,6 +51,13 @@ class MainActivity : AppCompatActivity() {
     /** MRZ scannée (ou saisie) : détermine le type de document et sert de référence de cohérence. */
     private var scanned: MrzOcr.MrzData? = null
 
+    /**
+     * true après qu'une carte d'identité a refusé la clé MRZ : on exige alors le CAN.
+     * Les CNIe (française comprise) acceptent normalement PACE-MRZ — le CAN n'est
+     * qu'un repli, plus un préalable.
+     */
+    private var canFallback = false
+
     /** Statut posé par le retour de scan : ne pas l'écraser au onResume qui suit. */
     private var statusSetByScan = false
 
@@ -256,9 +263,14 @@ class MainActivity : AppCompatActivity() {
             append("Naissance : ${mrz.dateOfBirth}   Expiration : ${mrz.dateOfExpiry}")
         }
         setChip(chipMrzValid, true, R.string.mrz_valid, R.string.mrz_valid, false)
-        canGroup.visibility = if (isId) View.VISIBLE else View.GONE
+        // Clé MRZ d'abord pour TOUS les documents : les cartes d'identité (CNIe française,
+        // CNIE marocaine…) acceptent PACE-MRZ comme les passeports. Le CAN n'apparaît
+        // qu'en repli si la puce refuse la clé MRZ (cf. onReadFailure).
+        canFallback = false
+        canInput.text = null
+        canGroup.visibility = View.GONE
         // Invite claire à approcher la puce NFC (étape 2).
-        nfcPromptText.setText(if (isId) R.string.nfc_invite_id else R.string.nfc_invite_mrz)
+        nfcPromptText.setText(R.string.nfc_invite_mrz)
         nfcPrompt.visibility = View.VISIBLE
         detectedCard.visibility = View.VISIBLE
         showTapStatus()
@@ -267,6 +279,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun resetToScan() {
         scanned = null
+        canFallback = false
         detectedCard.visibility = View.GONE
         resultCard.visibility = View.GONE
         canInput.text = null
@@ -321,9 +334,33 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 result
                     .onSuccess { showResult(it) }
-                    .onFailure { warn(getString(R.string.read_error, it.message ?: "?")) }
+                    .onFailure { onReadFailure(it, req) }
             }
         }
+    }
+
+    /**
+     * Échec de lecture. Cas particulier : une carte d'identité qui refuse la clé MRZ
+     * (rare — les CNIe acceptent normalement PACE-MRZ) -> on fait apparaître le champ
+     * CAN et on invite à réessayer. Une perte de contact NFC ne passe PAS par ici
+     * (voir [ChipAccessException]).
+     */
+    private fun onReadFailure(e: Throwable, req: AccessRequest) {
+        if (e is ChipAccessException) {
+            when {
+                req.key is AccessKey.Mrz && scanned?.docType == MrzOcr.DocType.ID_CARD -> {
+                    canFallback = true
+                    canGroup.visibility = View.VISIBLE
+                    nfcPromptText.setText(R.string.can_fallback)
+                    nfcPrompt.visibility = View.VISIBLE
+                    warn(getString(R.string.access_denied_mrz_id))
+                }
+                req.key is AccessKey.Can -> warn(getString(R.string.access_denied_can))
+                else -> warn(getString(R.string.access_denied_mrz))
+            }
+            return
+        }
+        warn(getString(R.string.read_error, e.message ?: "?"))
     }
 
     private data class AccessRequest(val key: AccessKey, val expectedMrz: MrzOcr.MrzData?)
@@ -332,17 +369,18 @@ class MainActivity : AppCompatActivity() {
     private fun buildRequest(): AccessRequest? {
         val mrz = scanned
         if (mrz != null) {
-            return if (mrz.docType == MrzOcr.DocType.ID_CARD) {
-                // CNIe : PACE-CAN. Le CAN (recto) n'est pas dans la MRZ -> requis.
+            if (mrz.docType == MrzOcr.DocType.ID_CARD && canFallback) {
+                // Repli : la puce a refusé la clé MRZ -> le CAN (recto) devient requis.
                 val can = canInput.text?.toString()?.trim().orEmpty()
-                if (can.length != 6 || !can.all { it.isDigit() }) {
+                return if (can.length != 6 || !can.all { it.isDigit() }) {
                     warn(getString(R.string.enter_can)); null
                 } else {
                     AccessRequest(AccessKey.Can(can), mrz)
                 }
-            } else {
-                AccessRequest(AccessKey.Mrz(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry), mrz)
             }
+            // Cas nominal, tous documents : clé dérivée de la MRZ (PACE-MRZ, repli BAC).
+            // Les CNIe l'acceptent aussi (applet « PACE passwords: MRZ, CAN, PIN, PUK »).
+            return AccessRequest(AccessKey.Mrz(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry), mrz)
         }
 
         // Saisie manuelle (aucun scan) : CAN -> CNIe ; sinon doc/naissance/expiration -> MRZ.

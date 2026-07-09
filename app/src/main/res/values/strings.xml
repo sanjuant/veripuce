@@ -69,10 +69,11 @@
     <string name="doc_residence">Titre de séjour</string>
     <string name="mrz_valid">MRZ valide</string>
     <string name="can_needed_note">Le CAN (6 chiffres) est imprimé au **recto** de la carte — il ne figure pas dans la MRZ. Saisis-le ou scanne le recto.</string>
-    <string name="tap_mrz">Approche le document du dos du téléphone, sans bouger.</string>
-    <string name="tap_id">Renseigne le CAN, puis approche la carte du dos du téléphone.</string>
     <string name="nfc_invite_mrz">Approche maintenant le dos du téléphone contre le document, et ne bouge plus.</string>
-    <string name="nfc_invite_id">Renseigne le CAN ci-dessus, puis approche le dos du téléphone contre la carte.</string>
+    <string name="can_fallback">Cette carte demande le CAN : saisis les 6 chiffres imprimés au recto, puis approche à nouveau la carte.</string>
+    <string name="access_denied_mrz_id">La puce a refusé la clé MRZ — saisis le CAN pour continuer.</string>
+    <string name="access_denied_can">Accès refusé — vérifie le CAN (6 chiffres au recto), puis réapproche la carte.</string>
+    <string name="access_denied_mrz">Accès refusé — vérifie que la MRZ scannée correspond bien au document, puis réapproche-le.</string>
     <string name="result_fail">Anomalie détectée — ne pas accepter ce document.</string>
     <string name="result_unverified">Contrôles internes OK. Compare la photo et les informations avec la personne en face.</string>
 

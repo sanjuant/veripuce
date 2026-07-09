@@ -67,10 +67,19 @@ class CnieReader {
             service = svc
             svc.open()
 
-            // 1) Ouverture de la session sécurisée selon le type de clé.
-            when (key) {
-                is AccessKey.Can -> openWithCan(svc, key.can)
-                is AccessKey.Mrz -> openWithMrz(svc, key)
+            // 1) Ouverture de la session sécurisée selon le type de clé. Un refus de la
+            //    clé (PACE/BAC) est signalé par une exception dédiée pour que l'UI puisse
+            //    proposer un repli (ex. CAN) — mais PAS sur une simple perte de contact.
+            try {
+                when (key) {
+                    is AccessKey.Can -> openWithCan(svc, key.can)
+                    is AccessKey.Mrz -> openWithMrz(svc, key)
+                }
+            } catch (e: Exception) {
+                val tagLost = generateSequence(e as Throwable) { it.cause }
+                    .any { it is android.nfc.TagLostException }
+                if (tagLost) throw e
+                throw ChipAccessException(e)
             }
 
             // 2) Lecture des data groups sur octets BRUTS on-card (cf. passive auth).

@@ -23,7 +23,8 @@ object MrzOcr {
     /**
      * Type de document déduit de la MRZ.
      *  - [PASSPORT] : TD3 (2 lignes) -> clé MRZ.
-     *  - [ID_CARD] : TD1, code document « ID » (carte nationale, ex. CNIe) -> PACE-CAN.
+     *  - [ID_CARD] : TD1, code document « ID » (carte nationale, ex. CNIe) -> clé MRZ,
+     *    CAN (recto) en repli si la puce refuse.
      *  - [RESIDENCE_PERMIT] : TD1, autre code (titre de séjour) -> clé MRZ, comme un passeport.
      */
     enum class DocType { ID_CARD, PASSPORT, RESIDENCE_PERMIT }
