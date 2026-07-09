@@ -46,8 +46,8 @@
 
     <!-- Confidentialité -->
     <string name="privacy_badge">100 % local — rien n\'est envoyé, rien n\'est conservé</string>
-    <string name="privacy_title">Confidentialité</string>
-    <string name="privacy_text">Veripuce fonctionne entièrement sur ton téléphone :\n\n• Lecture NFC, scan caméra et vérifications sont exécutés localement, hors connexion.\n\n• Aucune donnée n\'est transmise à un serveur : l\'application ne possède pas la permission Internet — elle est techniquement incapable d\'envoyer quoi que ce soit.\n\n• Rien n\'est conservé : aucune donnée lue n\'est écrite sur l\'appareil (ni fichier, ni base, ni sauvegarde système). Tout reste en mémoire et disparaît à la fermeture.\n\n• Les images de la caméra sont analysées en mémoire et jamais enregistrées.\n\nLire une pièce d\'identité traite des données personnelles : recueille le consentement de la personne concernée et n\'utilise l\'application que dans un cadre légitime (RGPD).</string>
+    <string name="privacy_title">Confidentialité &amp; sécurité</string>
+    <string name="privacy_text">Veripuce fonctionne entièrement sur ton téléphone :\n\n• Lecture NFC, scan caméra et vérifications sont exécutés localement, hors connexion.\n\n• Aucune donnée n\'est transmise à un serveur : l\'application ne possède pas la permission Internet — elle est techniquement incapable d\'envoyer quoi que ce soit.\n\n• Rien n\'est conservé : aucune donnée lue n\'est écrite sur l\'appareil (ni fichier, ni base, ni sauvegarde système). Tout reste en mémoire et disparaît à la fermeture.\n\n• Les images de la caméra sont analysées en mémoire et jamais enregistrées.\n\n• À l\'écran, les données lues sont floutées par défaut et ne s\'affichent que pendant l\'appui sur « Maintenir pour afficher ».\n\nD\'où vient la confiance « Émis par l\'État » :\n\n• La puce porte une signature électronique de l\'État émetteur. Veripuce la vérifie contre les certificats officiels des États (CSCA) embarqués dans l\'application — rien n\'est téléchargé à l\'usage.\n\n• Ces certificats proviennent de trois sources officielles, recoupées entre elles : la liste maîtresse de l\'OACI (aviation civile internationale), celle du BSI (office fédéral allemand de la sécurité de l\'information) et l\'ANTS (France — certificats des passeports, CNIe, titres de séjour et e-ID de la CNIe).\n\n• Chaque certificat embarqué est traçable (source et empreinte documentées) et le magasin est mis à jour à chaque version de l\'application, après revue.\n\nLire une pièce d\'identité traite des données personnelles : recueille le consentement de la personne concernée et n\'utilise l\'application que dans un cadre légitime (RGPD).</string>
 
     <!-- Aide -->
     <string name="help">Comment scanner ?</string>
@@ -61,7 +61,14 @@
     <string name="chip_sig_unverified">Signature non vérifiée</string>
 
     <!-- Flux unique : scan MRZ -> détection -> lecture puce -->
-    <string name="scan_prompt">Commence par scanner la bande MRZ, en bas du document (2 lignes pour un passeport, 3 pour une carte).</string>
+    <string name="scan_prompt">Commence par scanner la bande MRZ — la zone de caractères en bas du document :</string>
+    <string name="vignette_card">Carte / séjour · 3 lignes</string>
+    <string name="vignette_passport">Passeport · 2 lignes</string>
+    <string name="manual_type_card">Carte</string>
+    <string name="manual_type_passport">Passeport</string>
+    <string name="manual_type_residence">Séjour</string>
+    <string name="hold_to_reveal">Maintenir pour afficher</string>
+    <string name="masked_hint">Données masquées — maintenir le texte pour les afficher</string>
     <string name="manual_entry">Saisie manuelle</string>
     <string name="rescan">Rescanner</string>
     <string name="new_check">Nouveau contrôle</string>

@@ -1,14 +1,18 @@
 package fr.veripuce.app
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.IsoDep
 import android.os.Bundle
 import android.provider.Settings
+import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -24,6 +28,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -66,6 +71,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanMrz: MaterialButton
     private lateinit var manualToggle: MaterialButton
     private lateinit var manualGroup: View
+    private lateinit var manualType: MaterialButtonToggleGroup
+    private lateinit var manualMrzGroup: View
+    private lateinit var manualCanGroup: View
+
+    /** Photo lue sur la puce : originale + version floutée (affichée par défaut). */
+    private var photoOriginal: Bitmap? = null
+    private var photoBlurred: Bitmap? = null
     private lateinit var docInput: TextInputEditText
     private lateinit var dobInput: TextInputEditText
     private lateinit var expInput: TextInputEditText
@@ -173,6 +185,12 @@ class MainActivity : AppCompatActivity() {
         scanCard = findViewById(R.id.scanCard)
         helpBtn = findViewById(R.id.help)
         findViewById<MaterialButton>(R.id.newCheck).setOnClickListener { resetToScan() }
+        manualType = findViewById(R.id.manualType)
+        manualMrzGroup = findViewById(R.id.manualMrzGroup)
+        manualCanGroup = findViewById(R.id.manualCanGroup)
+        manualType.addOnButtonCheckedListener { _, _, _ -> updateManualFields() }
+        updateManualFields()
+        bindHoldToReveal(findViewById(R.id.revealSensitive))
         scanMrz = findViewById(R.id.scanMrz)
         manualToggle = findViewById(R.id.manualToggle)
         manualGroup = findViewById(R.id.manualGroup)
@@ -183,6 +201,7 @@ class MainActivity : AppCompatActivity() {
         detectedCard = findViewById(R.id.detectedCard)
         detectedType = findViewById(R.id.detectedType)
         detectedFields = findViewById(R.id.detectedFields)
+        bindHoldToReveal(detectedFields)
         chipMrzValid = findViewById(R.id.chipMrzValid)
         canGroup = findViewById(R.id.canGroup)
         canInput = findViewById(R.id.canInput)
@@ -272,6 +291,7 @@ class MainActivity : AppCompatActivity() {
             appendLine("Doc : ${mrz.documentNumber}")
             append("Naissance : ${mrz.dateOfBirth}   Expiration : ${mrz.dateOfExpiry}")
         }
+        setTextBlur(detectedFields, blurred = true) // données masquées par défaut
         setChip(chipMrzValid, true, R.string.mrz_valid, R.string.mrz_valid, false)
         // Clé MRZ d'abord pour TOUS les documents : les cartes d'identité (CNIe française,
         // CNIE marocaine…) acceptent PACE-MRZ comme les passeports. Le CAN n'apparaît
@@ -395,9 +415,14 @@ class MainActivity : AppCompatActivity() {
             return AccessRequest(AccessKey.Mrz(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry), mrz)
         }
 
-        // Saisie manuelle (aucun scan) : CAN -> CNIe ; sinon doc/naissance/expiration -> MRZ.
-        val can = manualCan.text?.toString()?.trim().orEmpty()
-        if (can.length == 6 && can.all { it.isDigit() }) {
+        // Saisie manuelle (aucun scan) : le type choisi (onglets) détermine la clé —
+        // carte d'identité -> CAN ; passeport / titre de séjour -> n° + dates (clé MRZ).
+        if (manualType.checkedButtonId == R.id.typeCard) {
+            val can = manualCan.text?.toString()?.trim().orEmpty()
+            if (can.length != 6 || !can.all { it.isDigit() }) {
+                warn(getString(R.string.enter_can))
+                return null
+            }
             return AccessRequest(AccessKey.Can(can), null)
         }
         val doc = docInput.text?.toString()?.trim()?.uppercase().orEmpty()
@@ -408,8 +433,63 @@ class MainActivity : AppCompatActivity() {
             val manualMrz = MrzOcr.MrzData(doc, dob, exp, MrzOcr.DocType.PASSPORT, "")
             return AccessRequest(AccessKey.Mrz(doc, dob, exp), manualMrz)
         }
-        warn(getString(R.string.scan_first))
+        warn(getString(R.string.enter_mrz))
         return null
+    }
+
+    /** Onglets de saisie manuelle : carte -> champ CAN ; passeport / séjour -> champs MRZ. */
+    private fun updateManualFields() {
+        val isCard = manualType.checkedButtonId == R.id.typeCard
+        manualCanGroup.visibility = if (isCard) View.VISIBLE else View.GONE
+        manualMrzGroup.visibility = if (isCard) View.GONE else View.VISIBLE
+    }
+
+    // ---- Masquage des données sensibles (MRZ scannée et données de la puce) ----
+
+    /** Floute (ou défloute) le rendu d'un TextView sans toucher à son contenu. */
+    private fun setTextBlur(tv: TextView, blurred: Boolean) {
+        if (blurred) {
+            tv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            tv.paint.maskFilter = BlurMaskFilter(tv.textSize / 2.2f, BlurMaskFilter.Blur.NORMAL)
+        } else {
+            tv.paint.maskFilter = null
+        }
+        tv.invalidate()
+    }
+
+    /** Flou par sous-échantillonnage (compatible toutes versions d'Android). */
+    private fun blurredCopy(src: Bitmap): Bitmap {
+        val small = Bitmap.createScaledBitmap(
+            src,
+            (src.width / 14).coerceAtLeast(1),
+            (src.height / 14).coerceAtLeast(1),
+            true,
+        )
+        return Bitmap.createScaledBitmap(small, src.width, src.height, true)
+    }
+
+    /** Applique ou lève le masquage sur toutes les vues sensibles. */
+    private fun setSensitiveVisible(visible: Boolean) {
+        setTextBlur(nameView, !visible)
+        setTextBlur(fields, !visible)
+        setTextBlur(extra, !visible)
+        setTextBlur(detectedFields, !visible)
+        (if (visible) photoOriginal else photoBlurred)?.let { photo.setImageBitmap(it) }
+    }
+
+    /** Révélation en appui maintenu : visible tant que le doigt reste posé. */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun bindHoldToReveal(trigger: View) {
+        trigger.setOnTouchListener { v, ev ->
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> setSensitiveVisible(true)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (ev.actionMasked == MotionEvent.ACTION_UP) v.performClick()
+                    setSensitiveVisible(false)
+                }
+            }
+            true
+        }
     }
 
     private fun showResult(r: ReadResult) {
@@ -466,7 +546,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         photo.visibility = if (r.photo != null) View.VISIBLE else View.GONE
-        r.photo?.let { photo.setImageBitmap(it) }
+        photoOriginal = r.photo
+        photoBlurred = r.photo?.let(::blurredCopy)
+        // Données sensibles (photo, identité, n° document) floutées par défaut ;
+        // visibles uniquement tant que « Maintenir pour afficher » est enfoncé.
+        setSensitiveVisible(false)
 
         resultCard.visibility = View.VISIBLE
 

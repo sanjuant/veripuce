@@ -61,6 +61,166 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
+                <!-- Vignettes décoratives : où se trouve la bande MRZ sur chaque document -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
+                    android:importantForAccessibility="noHideDescendants"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_doc_placeholder"
+                            android:orientation="vertical"
+                            android:padding="8dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <View
+                                    android:layout_width="20dp"
+                                    android:layout_height="26dp"
+                                    android:background="@drawable/bg_line_placeholder" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center_vertical"
+                                    android:layout_marginStart="7dp"
+                                    android:orientation="vertical">
+
+                                    <View
+                                        android:layout_width="match_parent"
+                                        android:layout_height="4dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+
+                                    <View
+                                        android:layout_width="64dp"
+                                        android:layout_height="4dp"
+                                        android:layout_marginTop="5dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+
+                                    <View
+                                        android:layout_width="40dp"
+                                        android:layout_height="4dp"
+                                        android:layout_marginTop="5dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="7dp"
+                                android:background="@drawable/bg_mrz_zone"
+                                android:fontFamily="monospace"
+                                android:lineSpacingExtra="1dp"
+                                android:maxLines="3"
+                                android:padding="4dp"
+                                android:text="IDFRA&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\n&lt;&lt;&lt;&lt;&lt;&lt;&lt;FRA&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;\nNOM&lt;&lt;PRENOM&lt;&lt;&lt;&lt;&lt;&lt;&lt;"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:textSize="8sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/vignette_card"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+
+                    <Space
+                        android:layout_width="12dp"
+                        android:layout_height="1dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_doc_placeholder"
+                            android:orientation="vertical"
+                            android:padding="8dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <View
+                                    android:layout_width="20dp"
+                                    android:layout_height="26dp"
+                                    android:background="@drawable/bg_line_placeholder" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center_vertical"
+                                    android:layout_marginStart="7dp"
+                                    android:orientation="vertical">
+
+                                    <View
+                                        android:layout_width="match_parent"
+                                        android:layout_height="4dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+
+                                    <View
+                                        android:layout_width="72dp"
+                                        android:layout_height="4dp"
+                                        android:layout_marginTop="5dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+
+                                    <View
+                                        android:layout_width="48dp"
+                                        android:layout_height="4dp"
+                                        android:layout_marginTop="5dp"
+                                        android:background="@drawable/bg_line_placeholder" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:background="@drawable/bg_mrz_zone"
+                                android:fontFamily="monospace"
+                                android:lineSpacingExtra="1dp"
+                                android:maxLines="2"
+                                android:padding="4dp"
+                                android:text="P&lt;FRANOM&lt;&lt;PRENOM&lt;&lt;&lt;\n&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;FRA&lt;&lt;&lt;&lt;&lt;"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:textSize="8sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/vignette_passport"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/scanMrz"
                     android:layout_width="match_parent"
@@ -86,6 +246,56 @@
                     android:orientation="vertical"
                     android:visibility="gone"
                     tools:visibility="visible">
+
+                    <!-- Type de document : détermine les champs affichés (carte -> CAN,
+                         passeport / titre de séjour -> n° + dates de la MRZ). -->
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/manualType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:checkedButton="@id/typeCard"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/typeCard"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingHorizontal="4dp"
+                            android:textSize="13sp"
+                            android:text="@string/manual_type_card" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/typePassport"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingHorizontal="4dp"
+                            android:textSize="13sp"
+                            android:text="@string/manual_type_passport" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/typeResidence"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingHorizontal="4dp"
+                            android:textSize="13sp"
+                            android:text="@string/manual_type_residence" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <LinearLayout
+                        android:id="@+id/manualMrzGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        tools:visibility="visible">
 
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -141,12 +351,13 @@
                                 android:maxLength="6" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
+                    </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/manualCanGroup"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
                         android:hint="@string/can_hint"
                         app:helperText="@string/can_helper"
                         app:helperTextEnabled="true">
@@ -199,6 +410,15 @@
                     android:lineSpacingExtra="3dp"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="Doc : 12AB34567\nNaissance : 900112   Expiration : 300112" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/masked_hint"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textStyle="italic" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipMrzValid"
@@ -425,6 +645,18 @@
                     android:visibility="gone"
                     tools:text="Adresse : 12 rue des Fleurs, 75001 Paris"
                     tools:visibility="visible" />
+
+                <!-- Données sensibles floutées par défaut : visibles tant que ce bouton
+                     est maintenu enfoncé (contrôle en agence, regards indiscrets). -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/revealSensitive"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/hold_to_reveal"
+                    app:icon="@android:drawable/ic_menu_view"
+                    app:iconGravity="textStart" />
 
                 <View
                     android:layout_width="match_parent"
