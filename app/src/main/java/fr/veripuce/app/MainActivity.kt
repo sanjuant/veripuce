@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nfcPrompt: View
     private lateinit var nfcPromptText: TextView
 
+    private lateinit var statusCard: MaterialCardView
     private lateinit var status: TextView
     private lateinit var statusIcon: ImageView
     private lateinit var progress: CircularProgressIndicator
@@ -76,12 +77,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var resultCard: MaterialCardView
     private lateinit var photo: ShapeableImageView
     private lateinit var nameView: TextView
+    private lateinit var expiredBadge: View
     private lateinit var fields: TextView
     private lateinit var extra: TextView
-    private lateinit var chipIntegrity: Chip
-    private lateinit var chipConsistency: Chip
-    private lateinit var chipClone: Chip
-    private lateinit var chipSignature: Chip
+    private lateinit var integrityIcon: ImageView
+    private lateinit var integrityLabel: TextView
+    private lateinit var rowConsistency: View
+    private lateinit var consistencyIcon: ImageView
+    private lateinit var consistencyLabel: TextView
+    private lateinit var rowClone: View
+    private lateinit var cloneIcon: ImageView
+    private lateinit var cloneLabel: TextView
 
     /** Retour du scan OCR : MRZ -> détection ; CAN -> pré-remplit le champ CAN. */
     private val scanLauncher =
@@ -160,18 +166,24 @@ class MainActivity : AppCompatActivity() {
         canInput = findViewById(R.id.canInput)
         nfcPrompt = findViewById(R.id.nfcPrompt)
         nfcPromptText = findViewById(R.id.nfcPromptText)
+        statusCard = findViewById(R.id.statusCard)
         status = findViewById(R.id.status)
         statusIcon = findViewById(R.id.statusIcon)
         progress = findViewById(R.id.progress)
         resultCard = findViewById(R.id.resultCard)
         photo = findViewById(R.id.photo)
         nameView = findViewById(R.id.name)
+        expiredBadge = findViewById(R.id.expiredBadge)
         fields = findViewById(R.id.fields)
         extra = findViewById(R.id.extra)
-        chipIntegrity = findViewById(R.id.chipIntegrity)
-        chipConsistency = findViewById(R.id.chipConsistency)
-        chipClone = findViewById(R.id.chipClone)
-        chipSignature = findViewById(R.id.chipSignature)
+        integrityIcon = findViewById(R.id.integrityIcon)
+        integrityLabel = findViewById(R.id.integrityLabel)
+        rowConsistency = findViewById(R.id.rowConsistency)
+        consistencyIcon = findViewById(R.id.consistencyIcon)
+        consistencyLabel = findViewById(R.id.consistencyLabel)
+        rowClone = findViewById(R.id.rowClone)
+        cloneIcon = findViewById(R.id.cloneIcon)
+        cloneLabel = findViewById(R.id.cloneLabel)
 
         val hasCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
         scanMrz.visibility = if (hasCamera) View.VISIBLE else View.GONE
@@ -338,9 +350,14 @@ class MainActivity : AppCompatActivity() {
     private fun showResult(r: ReadResult) {
         nfcPrompt.visibility = View.GONE // lecture faite : l'invite NFC n'a plus lieu d'être
         nameView.text = "${r.surname} ${r.givenNames}".trim()
+        expiredBadge.visibility = if (isExpired(r.dateOfExpiry)) View.VISIBLE else View.GONE
+
+        // Informations en clair (dates JJ/MM/AAAA, libellés courants).
         fields.text = buildString {
-            appendLine("Doc : ${r.documentNumber}    Nat : ${r.nationality}")
-            append("Naissance : ${r.dateOfBirth}")
+            appendLine("${getString(R.string.lbl_born)} : ${fmtDate(r.dateOfBirth, expiry = false)}")
+            appendLine("${getString(R.string.lbl_expires)} : ${fmtDate(r.dateOfExpiry, expiry = true)}")
+            appendLine("${getString(R.string.lbl_nationality)} : ${r.nationality}")
+            append("${getString(R.string.lbl_docnum)} : ${r.documentNumber}")
             r.dg13?.heightCm?.let { append("\nTaille : $it cm") }
         }
         val extraText = buildString {
@@ -356,45 +373,30 @@ class MainActivity : AppCompatActivity() {
         extra.text = extraText
         extra.visibility = if (extraText.isEmpty()) View.GONE else View.VISIBLE
 
-        setChip(chipIntegrity, r.hashesMatchSod, R.string.chip_integrity_ok, R.string.chip_integrity_bad, false)
-
-        // Cohérence MRZ optique <-> puce : chip masqué si aucune MRZ n'a servi de référence.
+        // Vérifications en langage clair (grande pastille verte/rouge + libellé).
+        setCheck(integrityIcon, integrityLabel, r.hashesMatchSod, R.string.check_integrity_ok, R.string.check_integrity_bad)
         when (r.mrzMatchesScan) {
-            null -> chipConsistency.visibility = View.GONE
+            null -> rowConsistency.visibility = View.GONE // non pertinent pour un accès MRZ
             else -> {
-                chipConsistency.visibility = View.VISIBLE
-                setChip(chipConsistency, r.mrzMatchesScan, R.string.chip_consistency_ok, R.string.chip_consistency_bad, false)
+                rowConsistency.visibility = View.VISIBLE
+                setCheck(consistencyIcon, consistencyLabel, r.mrzMatchesScan, R.string.check_consistency_ok, R.string.check_consistency_bad)
             }
         }
-
-        // Détection de clone. « Non disponible » n'apporte rien à l'utilisateur et peut
-        // inquiéter -> on masque simplement le chip ; on ne l'affiche que sur un résultat
-        // net (authentique / échec).
         when (r.cloneCheck) {
-            CloneCheck.AUTHENTIC -> {
-                chipClone.visibility = View.VISIBLE
-                setChip(chipClone, true, R.string.chip_clone_ok, R.string.chip_clone_ok, false)
-            }
-            CloneCheck.FAILED -> {
-                chipClone.visibility = View.VISIBLE
-                setChip(chipClone, false, R.string.chip_clone_bad, R.string.chip_clone_bad, false)
-            }
-            CloneCheck.UNSUPPORTED -> chipClone.visibility = View.GONE
+            CloneCheck.AUTHENTIC -> { rowClone.visibility = View.VISIBLE; setCheck(cloneIcon, cloneLabel, true, R.string.check_clone_ok, R.string.check_clone_ok) }
+            CloneCheck.FAILED -> { rowClone.visibility = View.VISIBLE; setCheck(cloneIcon, cloneLabel, false, R.string.check_clone_bad, R.string.check_clone_bad) }
+            CloneCheck.UNSUPPORTED -> rowClone.visibility = View.GONE
         }
-
-        setChip(chipSignature, r.sodSignatureVerified, R.string.chip_sig_ok, R.string.chip_sig_unverified, true)
+        // La ligne « Émission par l'État : non vérifiée » reste statique (roadmap CSCA).
 
         photo.visibility = if (r.photo != null) View.VISIBLE else View.GONE
         r.photo?.let { photo.setImageBitmap(it) }
 
         resultCard.visibility = View.VISIBLE
 
-        // Verdict global à 3 états — honnête pour de l'anti-fraude :
-        //  - ROUGE : échec dur (intégrité KO, incohérence MRZ, ou clone détecté) ;
-        //  - VERT : uniquement si la signature du SOD est chaînée à une CSCA de confiance
-        //           (origine étatique prouvée) — pas encore implémenté ;
-        //  - NEUTRE : lu et cohérent en interne, mais origine NON vérifiée (la seule
-        //           cohérence des hashs auto-signés ne prouve pas l'authenticité).
+        // Verdict global honnête à 3 états :
+        //  ROUGE = anomalie dure ; VERT = seulement si signature CSCA vérifiée (roadmap) ;
+        //  NEUTRE = contrôles internes OK mais origine non prouvée.
         val hardFail = !r.hashesMatchSod || r.mrzMatchesScan == false || r.cloneCheck == CloneCheck.FAILED
         when {
             hardFail -> setStatus(getString(R.string.result_fail), R.drawable.ic_state_error, R.color.on_bad_container)
@@ -403,30 +405,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- Statut ---
+    // --- Statut (carte masquée au repos/détecté : les cartes de scan/détection portent le message) ---
 
-    private fun showIdle() = setStatus(getString(R.string.scan_prompt), R.drawable.ic_state_info, R.color.on_neutral_container)
+    private fun showIdle() { statusCard.visibility = View.GONE }
 
-    private fun showTapStatus() = setStatus(
-        getString(if (scanned?.docType == MrzOcr.DocType.ID_CARD) R.string.tap_id else R.string.tap_mrz),
-        R.drawable.ic_state_info,
-        R.color.on_neutral_container,
-    )
+    private fun showTapStatus() { statusCard.visibility = View.GONE }
 
     private fun warn(text: String) = setStatus(text, R.drawable.ic_state_error, R.color.on_bad_container)
 
     private fun showReading() {
+        statusCard.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
         statusIcon.visibility = View.GONE
         status.text = getString(R.string.reading)
     }
 
     private fun setStatus(text: String, @DrawableRes icon: Int, @ColorRes tint: Int) {
+        statusCard.visibility = View.VISIBLE
         progress.visibility = View.GONE
         statusIcon.visibility = View.VISIBLE
         statusIcon.setImageResource(icon)
         statusIcon.setColorFilter(ContextCompat.getColor(this, tint))
         status.text = text
+    }
+
+    /** Ligne de vérification : grande pastille verte (OK) ou rouge (échec) + libellé clair. */
+    private fun setCheck(icon: ImageView, label: TextView, ok: Boolean, @StringRes okText: Int, @StringRes badText: Int) {
+        icon.setImageResource(if (ok) R.drawable.ic_state_ok else R.drawable.ic_state_error)
+        icon.setColorFilter(ContextCompat.getColor(this, if (ok) R.color.on_ok_container else R.color.on_bad_container))
+        label.setText(if (ok) okText else badText)
+    }
+
+    /** AAMMJJ -> JJ/MM/AAAA (siècle inféré : naissance dans le passé, expiration en 20xx). */
+    private fun fmtDate(yymmdd: String, expiry: Boolean): String {
+        if (yymmdd.length != 6 || !yymmdd.all { it.isDigit() }) return yymmdd
+        val yy = yymmdd.substring(0, 2).toInt()
+        val curYY = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) % 100
+        val year = if (expiry) 2000 + yy else if (yy > curYY) 1900 + yy else 2000 + yy
+        return "%s/%s/%d".format(yymmdd.substring(4, 6), yymmdd.substring(2, 4), year)
+    }
+
+    private fun isExpired(yymmdd: String): Boolean {
+        if (yymmdd.length != 6 || !yymmdd.all { it.isDigit() }) return false
+        val cal = java.util.Calendar.getInstance()
+        val today = cal.get(java.util.Calendar.YEAR) * 10000 + (cal.get(java.util.Calendar.MONTH) + 1) * 100 + cal.get(java.util.Calendar.DAY_OF_MONTH)
+        val exp = (2000 + yymmdd.substring(0, 2).toInt()) * 10000 + yymmdd.substring(2, 4).toInt() * 100 + yymmdd.substring(4, 6).toInt()
+        return exp < today
     }
 
     /** Colore un chip : vert (OK), rouge (échec) ou neutre (indéterminé). */

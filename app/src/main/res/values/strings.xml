@@ -73,8 +73,23 @@
     <string name="tap_id">Renseigne le CAN, puis approche la carte du dos du téléphone.</string>
     <string name="nfc_invite_mrz">Approche maintenant le dos du téléphone contre le document, et ne bouge plus.</string>
     <string name="nfc_invite_id">Renseigne le CAN ci-dessus, puis approche le dos du téléphone contre la carte.</string>
-    <string name="result_fail">Document suspect — une vérification a échoué.</string>
-    <string name="result_unverified">Lu et cohérent — origine non vérifiée (signature CSCA à venir).</string>
+    <string name="result_fail">Anomalie détectée — ne pas accepter ce document.</string>
+    <string name="result_unverified">Contrôles internes OK. Compare la photo et les informations avec la personne en face.</string>
+
+    <!-- Vérifications en langage clair (pour un contrôle par une personne non technique) -->
+    <string name="verifications_title">Vérifications</string>
+    <string name="check_integrity_ok">Données non modifiées</string>
+    <string name="check_integrity_bad">Données modifiées&#160;!</string>
+    <string name="check_consistency_ok">Correspond à la pièce imprimée</string>
+    <string name="check_consistency_bad">Ne correspond pas à la pièce&#160;!</string>
+    <string name="check_clone_ok">Puce authentique (non clonée)</string>
+    <string name="check_clone_bad">Puce possiblement clonée&#160;!</string>
+    <string name="check_origin_pending">Émission par l\'État : non vérifiée</string>
+    <string name="expired_badge">DOCUMENT EXPIRÉ</string>
+    <string name="lbl_born">Né(e) le</string>
+    <string name="lbl_expires">Expire le</string>
+    <string name="lbl_nationality">Nationalité</string>
+    <string name="lbl_docnum">N° document</string>
     <string name="scan_first">Scanne d\'abord la MRZ, ou utilise la saisie manuelle.</string>
     <string name="detected_summary">%1$s · %2$s</string>
 

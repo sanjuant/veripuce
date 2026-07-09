@@ -122,6 +122,7 @@ class CnieReader {
                 surname = mrz.primaryIdentifier,
                 givenNames = mrz.secondaryIdentifier,
                 dateOfBirth = mrz.dateOfBirth,
+                dateOfExpiry = mrz.dateOfExpiry,
                 nationality = mrz.nationality,
                 photo = photo,
                 dg13 = dg13,

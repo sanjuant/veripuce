@@ -27,7 +27,8 @@ data class ReadResult(
     val documentNumber: String,
     val surname: String,
     val givenNames: String,
-    val dateOfBirth: String,
+    val dateOfBirth: String,   // AAMMJJ
+    val dateOfExpiry: String,  // AAMMJJ
     val nationality: String,
     val photo: Bitmap?,
     val dg13: Dg13?,
