@@ -110,6 +110,9 @@ class ScanActivity : AppCompatActivity() {
                 windowRatio = 4.0f            // bande MRZ (2 lignes TD3 / 3 lignes TD1)
                 windowWidthFraction = 0.94f
                 windowVerticalBias = 0.42f
+                // Pièce d'identité fantôme au-dessus de la fenêtre : montre que la
+                // bande MRZ à cadrer est le bas du document.
+                showCardPlaceholder = true
             }
         }
 

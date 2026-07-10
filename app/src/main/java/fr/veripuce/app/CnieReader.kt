@@ -118,18 +118,16 @@ class CnieReader {
             //    (b) authenticité : signature du SOD par le DSC, DSC -> CSCA de confiance.
             val signature = verifySodSignature(sodBytes, sod, cscaCerts)
 
-            // 4) Cohérence MRZ imprimée (scan) <-> puce (DG1). PERTINENTE uniquement pour un
-            //    accès CAN : la clé CAN est indépendante de la MRZ, donc un DG1 != scan est
-            //    détectable. Pour un accès MRZ, la clé BAC/PACE dérive DÉJÀ de doc/naissance/
-            //    expiration -> l'ouverture de session garantit l'égalité (contrôle tautologique,
-            //    on n'affiche rien -> null).
-            val mrzMatchesScan: Boolean? = when (key) {
-                is AccessKey.Can -> expectedMrz?.let { exp ->
-                    normDoc(mrz.documentNumber) == normDoc(exp.documentNumber) &&
-                        mrz.dateOfBirth == exp.dateOfBirth &&
-                        mrz.dateOfExpiry == exp.dateOfExpiry
-                }
-                is AccessKey.Mrz -> null
+            // 4) Cohérence MRZ imprimée (scan) <-> puce (DG1), quel que soit le mode d'accès.
+            //    Accès CAN : la clé est indépendante de la MRZ, la comparaison est le seul
+            //    contrôle. Accès MRZ : l'ouverture de session prouve déjà la correspondance
+            //    (une mauvaise clé serait refusée) — on la vérifie quand même contre DG1 et
+            //    on l'AFFICHE : le conseiller doit voir cette garantie aussi sur un passeport.
+            //    null uniquement si aucune MRZ de référence n'a été fournie.
+            val mrzMatchesScan: Boolean? = expectedMrz?.let { exp ->
+                normDoc(mrz.documentNumber) == normDoc(exp.documentNumber) &&
+                    mrz.dateOfBirth == exp.dateOfBirth &&
+                    mrz.dateOfExpiry == exp.dateOfExpiry
             }
 
             // 5) Détection de clone (en dernier : Chip Authentication réétablit le SM).

@@ -411,14 +411,16 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="Doc : 12AB34567\nNaissance : 900112   Expiration : 300112" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- Même affordance que sur l'écran résultat : bouton à appui maintenu. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/revealDetected"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/masked_hint"
-                    android:textAppearance="?attr/textAppearanceLabelSmall"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textStyle="italic" />
+                    android:layout_marginTop="8dp"
+                    android:text="@string/hold_to_reveal"
+                    app:icon="@android:drawable/ic_menu_view"
+                    app:iconGravity="textStart" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipMrzValid"
@@ -534,9 +536,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                 <com.google.android.material.progressindicator.CircularProgressIndicator
                     android:id="@+id/progress"
@@ -563,114 +570,17 @@
                     android:text="@string/scan_prompt"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
-        <!-- Carte résultat -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/resultCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:visibility="gone"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            tools:visibility="visible">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/photo"
-                    android:layout_width="150dp"
-                    android:layout_height="190dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="14dp"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="@string/photo_desc"
-                    android:scaleType="centerCrop"
+                <!-- Détail des vérifications, affiché avec le verdict (résultat uniquement). -->
+                <LinearLayout
+                    android:id="@+id/checksContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="vertical"
                     android:visibility="gone"
-                    app:shapeAppearanceOverlay="@style/RoundedPhoto"
-                    app:strokeColor="?attr/colorOutlineVariant"
-                    app:strokeWidth="1dp"
-                    tools:visibility="visible" />
-
-                <TextView
-                    android:id="@+id/name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                    android:textColor="?attr/colorOnSurface"
-                    tools:text="MARTIN Camille" />
-
-                <TextView
-                    android:id="@+id/expiredBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_expired"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:text="@string/expired_badge"
-                    android:textColor="@color/on_bad_container"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-                <TextView
-                    android:id="@+id/fields"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:lineSpacingExtra="6dp"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textIsSelectable="true"
-                    tools:text="Né(e) le : 12/01/1990\nExpire le : 12/01/2030\nNationalité : FRA\nN° document : X4RT5PL02" />
-
-                <TextView
-                    android:id="@+id/extra"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:lineSpacingExtra="6dp"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textIsSelectable="true"
-                    android:visibility="gone"
-                    tools:text="Adresse : 12 rue des Fleurs, 75001 Paris"
-                    tools:visibility="visible" />
-
-                <!-- Données sensibles floutées par défaut : visibles tant que ce bouton
-                     est maintenu enfoncé (contrôle en agence, regards indiscrets). -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/revealSensitive"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/hold_to_reveal"
-                    app:icon="@android:drawable/ic_menu_view"
-                    app:iconGravity="textStart" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/verifications_title"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+                    tools:visibility="visible">
 
                 <!-- Chaque vérification : grande pastille ✓/✗ + libellé clair. -->
                 <LinearLayout
@@ -770,6 +680,101 @@
                         android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Carte résultat -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/resultCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/photo"
+                    android:layout_width="150dp"
+                    android:layout_height="190dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="14dp"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/photo_desc"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"
+                    app:shapeAppearanceOverlay="@style/RoundedPhoto"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:strokeWidth="1dp"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="MARTIN Camille" />
+
+                <TextView
+                    android:id="@+id/expiredBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_expired"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:text="@string/expired_badge"
+                    android:textColor="@color/on_bad_container"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/fields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="6dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textIsSelectable="true"
+                    tools:text="Né(e) le : 12/01/1990\nExpire le : 12/01/2030\nNationalité : FRA\nN° document : X4RT5PL02" />
+
+                <TextView
+                    android:id="@+id/extra"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="6dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textIsSelectable="true"
+                    android:visibility="gone"
+                    tools:text="Adresse : 12 rue des Fleurs, 75001 Paris"
+                    tools:visibility="visible" />
+
+                <!-- Données sensibles floutées par défaut : visibles tant que ce bouton
+                     est maintenu enfoncé (contrôle en agence, regards indiscrets). -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/revealSensitive"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/hold_to_reveal"
+                    app:icon="@android:drawable/ic_menu_view"
+                    app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/newCheck"

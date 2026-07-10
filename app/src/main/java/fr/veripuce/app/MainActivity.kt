@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nfcPromptText: TextView
 
     private lateinit var statusCard: MaterialCardView
+    private lateinit var checksContainer: View
     private lateinit var status: TextView
     private lateinit var statusIcon: ImageView
     private lateinit var progress: CircularProgressIndicator
@@ -201,13 +202,14 @@ class MainActivity : AppCompatActivity() {
         detectedCard = findViewById(R.id.detectedCard)
         detectedType = findViewById(R.id.detectedType)
         detectedFields = findViewById(R.id.detectedFields)
-        bindHoldToReveal(detectedFields)
+        bindHoldToReveal(findViewById(R.id.revealDetected))
         chipMrzValid = findViewById(R.id.chipMrzValid)
         canGroup = findViewById(R.id.canGroup)
         canInput = findViewById(R.id.canInput)
         nfcPrompt = findViewById(R.id.nfcPrompt)
         nfcPromptText = findViewById(R.id.nfcPromptText)
         statusCard = findViewById(R.id.statusCard)
+        checksContainer = findViewById(R.id.checksContainer)
         status = findViewById(R.id.status)
         statusIcon = findViewById(R.id.statusIcon)
         progress = findViewById(R.id.progress)
@@ -564,6 +566,8 @@ class MainActivity : AppCompatActivity() {
             r.signature == SignatureCheck.TRUSTED -> setStatus(getString(R.string.result_trusted), R.drawable.ic_state_ok, R.color.on_ok_container)
             else -> setStatus(getString(R.string.result_unverified), R.drawable.ic_state_info, R.color.on_neutral_container)
         }
+        // Le détail des vérifications vit avec le verdict, dans le même bandeau.
+        checksContainer.visibility = View.VISIBLE
     }
 
     /** Ligne « origine » : icône teintée + libellé (couleur atténuée pour les états non définitifs). */
@@ -593,6 +597,7 @@ class MainActivity : AppCompatActivity() {
         progress.visibility = View.VISIBLE
         statusIcon.visibility = View.GONE
         status.text = getString(R.string.reading)
+        checksContainer.visibility = View.GONE
     }
 
     private fun setStatus(text: String, @DrawableRes icon: Int, @ColorRes tint: Int) {
@@ -602,6 +607,8 @@ class MainActivity : AppCompatActivity() {
         statusIcon.setImageResource(icon)
         statusIcon.setColorFilter(ContextCompat.getColor(this, tint))
         status.text = text
+        // Le détail des vérifications n'accompagne que le verdict final (showResult le rouvre).
+        checksContainer.visibility = View.GONE
     }
 
     /** Ligne de vérification : grande pastille verte (OK) ou rouge (échec) + libellé clair. */

@@ -32,6 +32,14 @@ class ScanOverlayView @JvmOverloads constructor(
     var windowVerticalBias = 0.42f
         set(value) { field = value; invalidate() }
 
+    /**
+     * Dessine une pièce d'identité fantôme dont la fenêtre est la bande MRZ (bas du
+     * document) : silhouette de carte + photo et lignes schématiques au-dessus.
+     * Pour le mode « bande MRZ » uniquement.
+     */
+    var showCardPlaceholder = false
+        set(value) { field = value; invalidate() }
+
     private val density = resources.displayMetrics.density
     private val scrimPaint = Paint().apply { color = 0x99000000.toInt() }
     private val clearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -42,6 +50,15 @@ class ScanOverlayView @JvmOverloads constructor(
         strokeWidth = 3.5f * density
         color = Color.WHITE
         strokeCap = Paint.Cap.ROUND
+    }
+    private val ghostStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        color = 0xAAFFFFFF.toInt()
+    }
+    private val ghostFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = 0x55FFFFFF
     }
     private val window = RectF()
 
@@ -88,5 +105,41 @@ class ScanOverlayView @JvmOverloads constructor(
         // bas-droit
         canvas.drawLine(r.right - len, r.bottom, r.right - radius / 2, r.bottom, cornerPaint)
         canvas.drawLine(r.right, r.bottom - radius / 2, r.right, r.bottom - len, cornerPaint)
+
+        // Pièce d'identité fantôme : la fenêtre est sa bande MRZ, le reste du document
+        // (photo + lignes) est esquissé au-dessus pour guider le placement.
+        if (showCardPlaceholder) {
+            val pad = 6f * density
+            val cardBottom = r.bottom + pad
+            var cardH = (r.width() + 2 * pad) / 1.586f // ratio carte ID-1
+            val minTop = 8f * density
+            if (cardBottom - cardH < minTop) cardH = cardBottom - minTop
+            val card = RectF(r.left - pad, cardBottom - cardH, r.right + pad, cardBottom)
+            canvas.drawRoundRect(card, radius, radius, ghostStrokePaint)
+
+            val topArea = RectF(card.left, card.top, card.right, r.top - pad)
+            if (topArea.height() > 48f * density) {
+                val m = 16f * density
+                val photo = RectF(
+                    topArea.left + m,
+                    topArea.top + m,
+                    topArea.left + m + topArea.width() * 0.20f,
+                    topArea.bottom - m,
+                )
+                canvas.drawRoundRect(photo, 5f * density, 5f * density, ghostFillPaint)
+
+                val lineH = 5f * density
+                val lx = photo.right + m
+                var ly = topArea.top + m + 4f * density
+                for (frac in listOf(0.85f, 0.6f, 0.45f)) {
+                    if (ly + lineH > topArea.bottom - m) break
+                    canvas.drawRoundRect(
+                        RectF(lx, ly, lx + (card.right - m - lx) * frac, ly + lineH),
+                        lineH / 2f, lineH / 2f, ghostFillPaint,
+                    )
+                    ly += lineH + 12f * density
+                }
+            }
+        }
     }
 }

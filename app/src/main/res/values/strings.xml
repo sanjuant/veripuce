@@ -68,7 +68,6 @@
     <string name="manual_type_passport">Passeport</string>
     <string name="manual_type_residence">Séjour</string>
     <string name="hold_to_reveal">Maintenir pour afficher</string>
-    <string name="masked_hint">Données masquées — maintenir le texte pour les afficher</string>
     <string name="manual_entry">Saisie manuelle</string>
     <string name="rescan">Rescanner</string>
     <string name="new_check">Nouveau contrôle</string>
@@ -86,7 +85,6 @@
     <string name="result_unverified">Contrôles internes OK. Compare la photo et les informations avec la personne en face.</string>
 
     <!-- Vérifications en langage clair (pour un contrôle par une personne non technique) -->
-    <string name="verifications_title">Vérifications</string>
     <string name="check_integrity_ok">Données non modifiées</string>
     <string name="check_integrity_bad">Données modifiées&#160;!</string>
     <string name="check_consistency_ok">Correspond à la pièce imprimée</string>
