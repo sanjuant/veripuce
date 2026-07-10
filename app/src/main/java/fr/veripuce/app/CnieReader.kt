@@ -3,7 +3,6 @@ package fr.veripuce.app
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.nfc.tech.IsoDep
-import android.util.Log
 import com.gemalto.jp2.JP2Decoder
 import net.sf.scuba.smartcards.CardService
 import org.jmrtd.BACKey
@@ -51,8 +50,6 @@ enum class ReadStep(val percent: Int) {
 class CnieReader {
 
     private companion object {
-        const val TAG = "CnieReader"
-
         /** Racine des OIDs PACE (BSI TR-03110) : .1/.2 = GM, .3/.4 = IM, .6 = CAM. */
         const val OID_PACE = "0.4.0.127.0.7.2.2.4"
     }
@@ -211,7 +208,7 @@ class CnieReader {
     private fun openWithCan(service: PassportService, can: String) {
         require(can.length == 6 && can.all { it.isDigit() }) { "Le CAN doit faire 6 chiffres." }
         val paceInfos = readPaceInfos(service)
-        doPaceAny(service, PACEKeySpec.createCANKey(can), paceInfos, "CAN")
+        doPaceAny(service, PACEKeySpec.createCANKey(can), paceInfos)
         service.sendSelectApplet(true)
     }
 
@@ -222,7 +219,7 @@ class CnieReader {
 
         if (paceInfos.isNotEmpty()) {
             val paceError = runCatching {
-                doPaceAny(service, PACEKeySpec.createMRZKey(bacKey), paceInfos, "MRZ")
+                doPaceAny(service, PACEKeySpec.createMRZKey(bacKey), paceInfos)
                 service.sendSelectApplet(true)
                 return
             }.exceptionOrNull()
@@ -256,9 +253,6 @@ class CnieReader {
                 else -> 3                                             // IM et autres
             }
         }
-        // Inventaire en clair (aucune donnée personnelle) : `adb logcat -s CnieReader`
-        // donne la réponse définitive sur le contenu d'EF.CardAccess d'une carte.
-        Log.i(TAG, "EF.CardAccess : " + infos.joinToString { "${it.objectIdentifier}/param=${it.parameterId}" })
         return infos
     }
 
@@ -267,7 +261,6 @@ class CnieReader {
         service: PassportService,
         key: PACEKeySpec,
         paceInfos: List<PACEInfo>,
-        label: String,
     ) {
         var lastError: Throwable? = null
         for (info in paceInfos) {
@@ -275,7 +268,6 @@ class CnieReader {
                 service.doPACE(key, info.objectIdentifier, PACEInfo.toParameterSpec(info.parameterId), null)
                 return
             } catch (e: Exception) {
-                Log.w(TAG, "PACE-$label refusé (${info.objectIdentifier}) : ${e.message}")
                 lastError = e
             }
         }
