@@ -129,7 +129,7 @@ class CnieReader {
             val sodBytes = svc.getInputStream(PassportService.EF_SOD, PassportService.DEFAULT_MAX_BLOCKSIZE).readBytes()
             onStep?.invoke(ReadStep.VERIFY)
             val sod = SODFile(sodBytes.inputStream())
-            val integrityOk = verifyDataGroupHashes(
+            val integrityOk = PassiveAuth.verifyDataGroupHashes(
                 sod,
                 buildMap {
                     put(1, dg1Bytes)
@@ -140,7 +140,7 @@ class CnieReader {
                 },
             )
             //    (b) authenticité : signature du SOD par le DSC, DSC -> CSCA de confiance.
-            val signature = verifySodSignature(sodBytes, sod, cscaCerts)
+            val signature = PassiveAuth.verifySodSignature(sodBytes, sod, cscaCerts)
 
             // 4) Cohérence MRZ imprimée (scan) <-> puce (DG1), quel que soit le mode d'accès.
             //    Accès CAN : la clé est indépendante de la MRZ, la comparaison est le seul
@@ -331,56 +331,6 @@ class CnieReader {
         }
 
         return CloneCheck.UNSUPPORTED to null
-    }
-
-    /**
-     * Vérifie la signature du SOD (CMS/PKCS#7) puis chaîne le DSC jusqu'à une CSCA de confiance.
-     *
-     * - Signature CMS invalide -> INVALID (document falsifié).
-     * - Signature valide mais DSC ne remonte à aucune CSCA chargée -> VALID_UNTRUSTED.
-     * - Signature valide + DSC signé par une CSCA de confiance -> TRUSTED (émis par l'État).
-     */
-    private fun verifySodSignature(
-        sodBytes: ByteArray,
-        sod: SODFile,
-        cscaCerts: Collection<X509Certificate>,
-    ): SignatureCheck {
-        val dsc = sod.docSigningCertificate ?: return SignatureCheck.NOT_CHECKED
-        val sigOk = runCatching {
-            // EF.SOD = tag 0x77 { ContentInfo CMS }. CMSSignedData attend la ContentInfo.
-            val contentInfo = BerTlv.parse(sodBytes).firstOrNull { it.tag == 0x77 }?.value ?: sodBytes
-            val cms = CMSSignedData(contentInfo)
-            val signer = cms.signerInfos.signers.firstOrNull() ?: return SignatureCheck.NOT_CHECKED
-            val verifier = JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(dsc)
-            // verify() contrôle la signature sur les signedAttrs ET que le message-digest
-            // signé correspond au contenu (le LDSSecurityObject = les hashs des DG).
-            signer.verify(verifier)
-        }.getOrElse { return SignatureCheck.NOT_CHECKED }
-        if (!sigOk) return SignatureCheck.INVALID
-        return if (chainToTrustedCsca(dsc, cscaCerts)) SignatureCheck.TRUSTED else SignatureCheck.VALID_UNTRUSTED
-    }
-
-    /** Le DSC est-il signé par une CSCA de confiance (émetteur correspondant + signature valide) ? */
-    private fun chainToTrustedCsca(dsc: X509Certificate, cscas: Collection<X509Certificate>): Boolean {
-        val issuer = dsc.issuerX500Principal
-        return cscas.any { csca ->
-            csca.subjectX500Principal == issuer &&
-                runCatching { dsc.verify(csca.publicKey) }
-                    // Repli BouncyCastle : le provider Android par défaut ne gère pas
-                    // certaines courbes (brainpool) utilisées par des CSCA.
-                    .recoverCatching { dsc.verify(csca.publicKey, "BC") }
-                    .isSuccess
-        }
-    }
-
-    /** Recalcule le hash de chaque DG (octets bruts) et le compare au hash signé du SOD. */
-    private fun verifyDataGroupHashes(sod: SODFile, dgRaw: Map<Int, ByteArray>): Boolean {
-        val md = MessageDigest.getInstance(sod.digestAlgorithm)
-        val stored = sod.dataGroupHashes
-        return dgRaw.isNotEmpty() && dgRaw.all { (num, bytes) ->
-            md.reset()
-            stored[num]?.contentEquals(md.digest(bytes)) == true
-        }
     }
 
     /** Normalise un n° de document pour comparaison (majuscules, sans '<' ni séparateurs). */
