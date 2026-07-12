@@ -53,6 +53,11 @@ class CnieReader {
         /** Racine des OIDs PACE (BSI TR-03110) : .1/.2 = GM, .3/.4 = IM, .6 = CAM. */
         internal const val OID_PACE = "0.4.0.127.0.7.2.2.4"
 
+        /** Timeout transceive pendant le handshake PACE (échec rapide sur un gel). */
+        private const val HANDSHAKE_TIMEOUT_MS = 6_000
+        /** Timeout transceive pendant la lecture des data groups (marge plus large). */
+        private const val READ_TIMEOUT_MS = 15_000
+
         /**
          * Rang de préférence d'un protocole PACE (plus petit = essayé en premier).
          * GM d'abord par défaut ; IM d'abord si [preferIm] (rotation après un gel de GM).
@@ -91,11 +96,15 @@ class CnieReader {
         diag: DiagnosticsCollector? = null,
         preferIm: Boolean = false,
     ): ReadResult {
-        isoDep.timeout = 15_000
+        // Délai COURT pour le handshake PACE : un échange normal répond en <2 s ; un gel
+        // (ex. GM sur une carte qui couple mal) échoue ainsi en ~6 s au lieu de 15 s, ce
+        // qui laisse la rotation IM tenter au tap suivant bien plus vite. La lecture des
+        // data groups, elle, garde une marge plus large (restaurée après l'ouverture).
+        isoDep.timeout = HANDSHAKE_TIMEOUT_MS
         diag?.apply {
             nfcExtendedLength = runCatching { isoDep.isExtendedLengthApduSupported }.getOrNull()
             nfcMaxTransceive = runCatching { isoDep.maxTransceiveLength }.getOrNull()
-            nfcTimeoutMs = 15_000
+            nfcTimeoutMs = HANDSHAKE_TIMEOUT_MS
         }
         onStep?.invoke(ReadStep.CONNECT)
 
@@ -125,6 +134,9 @@ class CnieReader {
                 is AccessKey.Can -> openWithCan(svc, key.can, diag, preferIm)
                 is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, preferIm)
             }
+
+            // Session ouverte : marge plus large pour la lecture des data groups (DG2 photo).
+            isoDep.timeout = READ_TIMEOUT_MS
 
             // 2) Lecture des data groups sur octets BRUTS on-card (cf. passive auth).
             onStep?.invoke(ReadStep.IDENTITY)

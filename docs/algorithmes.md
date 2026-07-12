@@ -160,8 +160,10 @@ table exacte `BLIND_SUBSTITUTIONS` (`MrzKeyCandidates.kt:18-30`) :
 ## 5. Ouverture de la session (PACE / BAC)
 
 `CnieReader.kt` bâtit un `PassportService` (JMRTD) sur le transport `IsoDep`/SCUBA, avec
-`shouldCheckMAC = true` (indispensable à l'anti-clone, voir §7) et un timeout de 15 s
-(`CnieReader.kt:72,85-94`).
+`shouldCheckMAC = true` (indispensable à l'anti-clone, voir §7). Le timeout transceive est
+**court pendant le handshake** PACE (6 s — un échange normal répond en <2 s, donc un gel
+échoue vite et laisse la rotation IM tenter au tap suivant) puis **élargi à 15 s** pour la
+lecture des data groups (`CnieReader.kt`).
 
 **Itération multi-protocoles PACE** (`readPaceInfos` + `tryPace`, `CnieReader.kt:321-363`)
 - `EF.CardAccess` peut annoncer plusieurs protocoles PACE ; JMRTD les stocke dans un `HashSet`
