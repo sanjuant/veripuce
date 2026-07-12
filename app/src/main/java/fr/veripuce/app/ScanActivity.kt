@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -27,6 +28,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -60,9 +62,16 @@ class ScanActivity : AppCompatActivity() {
     private var camera: Camera? = null
     private var torchOn = false
 
-    /** Stabilité inter-images : même valeur exigée sur 2 images consécutives. */
+    /** CAN : pas de checksum -> même valeur exigée sur 2 images consécutives. */
     private var lastCan: String? = null
-    private var lastMrz: MrzOcr.MrzData? = null
+
+    /** MRZ : vote par position (converge malgré une erreur OCR intermittente). */
+    private val vote = MrzVote()
+
+    /** Compteurs de qualité de capture (torche auto, indice de reflet). */
+    private var lowLightFrames = 0
+    private var glareFrames = 0
+    private var autoTorchDone = false
 
     /** Repli : renvoyer à la saisie manuelle (lumière insuffisante, MRZ illisible…). */
     private fun requestManualEntry() {
@@ -118,11 +127,7 @@ class ScanActivity : AppCompatActivity() {
 
         // Repli manuel (toujours dispo) et lampe torche (utile en basse lumière).
         findViewById<MaterialButton>(R.id.scanManual).setOnClickListener { requestManualEntry() }
-        findViewById<MaterialButton>(R.id.scanTorch).setOnClickListener {
-            torchOn = !torchOn
-            camera?.cameraControl?.enableTorch(torchOn)
-            (it as MaterialButton).setIconResource(if (torchOn) R.drawable.ic_flash_on else R.drawable.ic_flash_off)
-        }
+        findViewById<MaterialButton>(R.id.scanTorch).setOnClickListener { setTorch(!torchOn) }
 
         // Après un délai sans lecture réussie, suggérer la lampe / la saisie manuelle.
         hintHandler.postDelayed({
@@ -155,14 +160,14 @@ class ScanActivity : AppCompatActivity() {
                     it.setSurfaceProvider(findViewById<PreviewView>(R.id.preview).surfaceProvider)
                 }
                 // Une MRZ TD3 fait 44 caractères : en téléphone portrait, elle s'étale
-                // sur la PETITE dimension de l'image d'analyse. À 720p cela donne
-                // ~13 px/caractère — trop bas pour l'OCR-B. Viser 1080p.
+                // sur la PETITE dimension de l'image d'analyse. À 1080p cela reste juste
+                // pour l'OCR-B ; viser 1440p (le débit est régulé par KEEP_ONLY_LATEST).
                 val analysis = ImageAnalysis.Builder()
                     .setResolutionSelector(
                         ResolutionSelector.Builder()
                             .setResolutionStrategy(
                                 ResolutionStrategy(
-                                    Size(1920, 1080),
+                                    Size(2560, 1440),
                                     ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
                                 )
                             )
@@ -176,6 +181,8 @@ class ScanActivity : AppCompatActivity() {
                 // Bouton torche visible seulement si l'appareil a un flash.
                 findViewById<MaterialButton>(R.id.scanTorch).visibility =
                     if (camera?.cameraInfo?.hasFlashUnit() == true) View.VISIBLE else View.GONE
+                // Refaire la mise au point périodiquement sur le centre de la fenêtre.
+                hintHandler.postDelayed(focusRunnable, 1_500)
             } catch (e: Exception) {
                 if (finished.compareAndSet(false, true)) {
                     setResult(RESULT_CANCELED, Intent().putExtra(EXTRA_CAMERA_UNAVAILABLE, true))
@@ -192,6 +199,10 @@ class ScanActivity : AppCompatActivity() {
             proxy.close()
             return
         }
+        // Qualité de capture (plan Y, sans conversion bitmap) : torche auto en basse
+        // lumière, indice de reflet sur le polycarbonate de la CNIe.
+        runCatching { captureQuality(media) }.getOrNull()?.let(::updateCaptureHints)
+
         val image = InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees)
         recognizer.process(image)
             .addOnSuccessListener { result ->
@@ -207,36 +218,123 @@ class ScanActivity : AppCompatActivity() {
             .addOnCompleteListener { proxy.close() } // libère l'image dans tous les cas
     }
 
-    /** Appelé sur le thread principal (callbacks ML Kit) — pas de course sur lastCan/lastMrz. */
+    /** Appelé sur le thread principal (callbacks ML Kit) — pas de course sur l'état. */
     private fun onText(text: String) {
         if (finished.get()) return
-        val data: Intent? = when (mode) {
-            MODE_CAN -> MrzOcr.findCan(text)?.let { can ->
+        when (mode) {
+            MODE_CAN -> {
                 // Pas de checksum sur le CAN -> exiger la même valeur sur 2 images.
-                if (lastCan == can) {
-                    Intent().putExtra(EXTRA_CAN, can)
-                } else {
-                    lastCan = can; null
-                }
+                val can = MrzOcr.findCan(text) ?: return
+                if (lastCan == can) finishWithCan(can) else lastCan = can
             }
-            // MRZ : chiffres de contrôle ICAO + plausibilité de dates + même lecture
-            // sur 2 images consécutives (barrière contre les doubles erreurs OCR).
-            else -> MrzOcr.findMrz(text)?.let { mrz ->
-                if (lastMrz == mrz) {
-                    Intent()
-                        .putExtra(EXTRA_DOC, mrz.documentNumber)
-                        .putExtra(EXTRA_DOB, mrz.dateOfBirth)
-                        .putExtra(EXTRA_EXP, mrz.dateOfExpiry)
-                        .putExtra(EXTRA_DOCTYPE, mrz.docType.name)
-                        .putExtra(EXTRA_STATE, mrz.issuingState)
-                } else {
-                    lastMrz = mrz; null
+            else -> {
+                // Chiffres de contrôle ICAO + plausibilité des dates, puis VOTE par position
+                // (converge malgré une erreur OCR intermittente sur une paire aveugle).
+                val mrz = MrzOcr.findMrz(text) ?: return
+                when (val decision = vote.offer(mrz)) {
+                    // Conflit de paire aveugle : on renvoie le numéro voté ; le lecteur
+                    // essaiera ses variantes en PACE (cf. MrzKeyCandidates).
+                    is MrzVote.Decision.Confident -> finishWithMrz(decision.mrz)
+                    is MrzVote.Decision.BlindPairConflict -> finishWithMrz(decision.mrz)
+                    null -> {}
                 }
             }
         }
-        if (data != null && finished.compareAndSet(false, true)) {
-            setResult(RESULT_OK, data.putExtra(EXTRA_MODE, mode))
+    }
+
+    private fun finishWithMrz(mrz: MrzOcr.MrzData) {
+        if (finished.compareAndSet(false, true)) {
+            setResult(
+                RESULT_OK,
+                Intent()
+                    .putExtra(EXTRA_MODE, mode)
+                    .putExtra(EXTRA_DOC, mrz.documentNumber)
+                    .putExtra(EXTRA_DOB, mrz.dateOfBirth)
+                    .putExtra(EXTRA_EXP, mrz.dateOfExpiry)
+                    .putExtra(EXTRA_DOCTYPE, mrz.docType.name)
+                    .putExtra(EXTRA_STATE, mrz.issuingState),
+            )
             finish()
+        }
+    }
+
+    private fun finishWithCan(can: String) {
+        if (finished.compareAndSet(false, true)) {
+            setResult(RESULT_OK, Intent().putExtra(EXTRA_MODE, mode).putExtra(EXTRA_CAN, can))
+            finish()
+        }
+    }
+
+    /** Luminance moyenne et fraction de pixels saturés sur la bande centrale (plan Y). */
+    private data class CaptureQuality(val avgLuma: Int, val glareFraction: Float)
+
+    private fun captureQuality(image: android.media.Image): CaptureQuality {
+        val plane = image.planes[0]
+        val buf = plane.buffer
+        val rowStride = plane.rowStride
+        val pixelStride = plane.pixelStride
+        val step = 16
+        var sum = 0L
+        var bright = 0
+        var count = 0
+        var row = image.height / 4
+        while (row < image.height * 3 / 4) {
+            val base = row * rowStride
+            var col = 0
+            while (col < image.width) {
+                val idx = base + col * pixelStride
+                if (idx >= buf.limit()) break
+                val v = buf.get(idx).toInt() and 0xFF
+                sum += v
+                if (v > 250) bright++
+                count++
+                col += step
+            }
+            row += step
+        }
+        return if (count == 0) CaptureQuality(128, 0f)
+        else CaptureQuality((sum / count).toInt(), bright.toFloat() / count)
+    }
+
+    private fun updateCaptureHints(q: CaptureQuality) {
+        lowLightFrames = if (q.avgLuma < 60) lowLightFrames + 1 else 0
+        glareFrames = if (q.glareFraction > 0.015f) glareFrames + 1 else 0
+        runOnUiThread {
+            if (finished.get()) return@runOnUiThread
+            // Basse lumière soutenue -> torche auto (une seule fois, sans écraser un choix manuel).
+            if (!autoTorchDone && !torchOn && lowLightFrames >= 12 &&
+                camera?.cameraInfo?.hasFlashUnit() == true
+            ) {
+                autoTorchDone = true
+                setTorch(true)
+            }
+            // Reflet spéculaire répété -> conseiller d'incliner la carte.
+            if (glareFrames >= 10) findViewById<TextView>(R.id.scanHint).setText(R.string.scan_glare)
+        }
+    }
+
+    private fun setTorch(on: Boolean) {
+        torchOn = on
+        camera?.cameraControl?.enableTorch(on)
+        findViewById<MaterialButton>(R.id.scanTorch)
+            .setIconResource(if (on) R.drawable.ic_flash_on else R.drawable.ic_flash_off)
+    }
+
+    /** Mise au point périodique sur le centre de la fenêtre MRZ (améliore la netteté). */
+    private val focusRunnable = object : Runnable {
+        override fun run() {
+            if (finished.get()) return
+            val pv = findViewById<PreviewView>(R.id.preview)
+            if (pv.width > 0 && pv.height > 0) {
+                runCatching {
+                    val point = pv.meteringPointFactory.createPoint(pv.width / 2f, pv.height * 0.42f)
+                    camera?.cameraControl?.startFocusAndMetering(
+                        FocusMeteringAction.Builder(point)
+                            .setAutoCancelDuration(2, TimeUnit.SECONDS).build()
+                    )
+                }
+            }
+            hintHandler.postDelayed(this, 2_500)
         }
     }
 
