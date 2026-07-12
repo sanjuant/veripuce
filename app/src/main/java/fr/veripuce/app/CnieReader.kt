@@ -58,6 +58,8 @@ class CnieReader {
      * @param expectedMrz MRZ lue optiquement (scan), pour la comparer à la puce (DG1).
      *                    null si aucune comparaison n'est demandée.
      * @param onStep      callback de progression (appelé depuis le thread de lecture).
+     * @param diag        collecteur de diagnostic OPTIONNEL (défaut null -> aucune collecte,
+     *                    comportement de lecture strictement inchangé).
      */
     fun read(
         isoDep: IsoDep,
@@ -65,8 +67,14 @@ class CnieReader {
         expectedMrz: MrzOcr.MrzData? = null,
         cscaCerts: Collection<X509Certificate> = emptyList(),
         onStep: ((ReadStep) -> Unit)? = null,
+        diag: DiagnosticsCollector? = null,
     ): ReadResult {
         isoDep.timeout = 15_000
+        diag?.apply {
+            nfcExtendedLength = runCatching { isoDep.isExtendedLengthApduSupported }.getOrNull()
+            nfcMaxTransceive = runCatching { isoDep.maxTransceiveLength }.getOrNull()
+            nfcTimeoutMs = 15_000
+        }
         onStep?.invoke(ReadStep.CONNECT)
 
         val cardService = CardService.getInstance(isoDep)
@@ -92,8 +100,8 @@ class CnieReader {
             //    transitoire (perte de contact, glitch NFC) remonte tel quel -> l'UI invite
             //    à re-présenter la carte sans proposer le CAN.
             when (key) {
-                is AccessKey.Can -> openWithCan(svc, key.can)
-                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz)
+                is AccessKey.Can -> openWithCan(svc, key.can, diag)
+                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag)
             }
 
             // 2) Lecture des data groups sur octets BRUTS on-card (cf. passive auth).
@@ -117,6 +125,13 @@ class CnieReader {
             val dg15Bytes = readEf(svc, PassportService.EF_DG15)
             val dg14 = dg14Bytes?.let { runCatching { DG14File(it.inputStream()) }.getOrNull() }
             val dg15 = dg15Bytes?.let { runCatching { DG15File(it.inputStream()) }.getOrNull() }
+
+            diag?.dgPresent?.apply {
+                clear(); add(1); add(2)
+                if (dg13Bytes != null) add(13)
+                if (dg14Bytes != null) add(14)
+                if (dg15Bytes != null) add(15)
+            }
 
             // 3) Passive authentication.
             //    (a) intégrité : hashs recalculés == hashs signés du SOD.
@@ -199,11 +214,11 @@ class CnieReader {
     }
 
     /** CNIe : PACE-CAN. Le CAN = les 6 chiffres imprimés au recto. */
-    private fun openWithCan(service: PassportService, can: String) {
+    private fun openWithCan(service: PassportService, can: String, diag: DiagnosticsCollector?) {
         require(can.length == 6 && can.all { it.isDigit() }) { "Le CAN doit faire 6 chiffres." }
-        val paceInfos = readPaceInfos(service)
-        when (val outcome = tryPace(service, PACEKeySpec.createCANKey(can), paceInfos)) {
-            PaceOutcome.Success -> service.sendSelectApplet(true)
+        val paceInfos = readPaceInfos(service, diag)
+        when (val outcome = tryPace(service, PACEKeySpec.createCANKey(can), "CAN", paceInfos, diag)) {
+            PaceOutcome.Success -> { service.sendSelectApplet(true); diag?.finalAccess = "CAN" }
             is PaceOutcome.KeyRefused -> throw ChipAccessException(outcome.error)  // mauvais CAN
             is PaceOutcome.Failed -> throw outcome.error ?: IllegalStateException("PACE-CAN impossible")
         }
@@ -217,8 +232,13 @@ class CnieReader {
      * des variantes du numéro avant de conclure au refus. BAC en dernier recours (jamais
      * pour une CNIe française, qui n'a pas de BAC).
      */
-    private fun openWithMrz(service: PassportService, mrz: AccessKey.Mrz, expectedMrz: MrzOcr.MrzData?) {
-        val paceInfos = readPaceInfos(service)
+    private fun openWithMrz(
+        service: PassportService,
+        mrz: AccessKey.Mrz,
+        expectedMrz: MrzOcr.MrzData?,
+        diag: DiagnosticsCollector?,
+    ) {
+        val paceInfos = readPaceInfos(service, diag)
         // État émetteur si (et seulement si) le document est une carte d'identité TD1.
         val idCardState = expectedMrz?.takeIf { it.docType == MrzOcr.DocType.ID_CARD }?.issuingState
         val isIdCard = idCardState != null
@@ -228,6 +248,7 @@ class CnieReader {
             // Aucun PACE annoncé -> document ancien en BAC (jamais une CNIe FRA).
             service.sendSelectApplet(false)
             service.doBAC(BACKey(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry))
+            diag?.finalAccess = "BAC"
             return
         }
 
@@ -239,9 +260,15 @@ class CnieReader {
 
         var refusal: Throwable? = null
         for (docNumber in candidates) {
+            // Libellé masqué : n° original -> "MRZ" ; variante -> "MRZ-candidat(pos=X)".
+            val label = candidateLabel(docNumber, mrz.documentNumber)
             val key = PACEKeySpec.createMRZKey(BACKey(docNumber, mrz.dateOfBirth, mrz.dateOfExpiry))
-            when (val outcome = tryPace(service, key, paceInfos)) {
-                PaceOutcome.Success -> { service.sendSelectApplet(true); return }
+            when (val outcome = tryPace(service, key, label, paceInfos, diag)) {
+                PaceOutcome.Success -> {
+                    service.sendSelectApplet(true)
+                    diag?.finalAccess = if (docNumber == mrz.documentNumber) "MRZ" else "MRZ-candidat"
+                    return
+                }
                 is PaceOutcome.KeyRefused -> refusal = outcome.error   // clé fausse -> candidat suivant
                 // Échec non-6300 (protocole/aléa) : les variantes n'y changeront rien,
                 // on remonte tel quel -> l'UI invite à re-présenter la carte.
@@ -251,13 +278,28 @@ class CnieReader {
 
         // Tous les candidats MRZ refusés (6300). BAC en dernier recours, sauf CNIe FRA.
         if (!isFrenchIdCard) {
-            runCatching {
+            val start = System.nanoTime()
+            val bacError = runCatching {
                 service.sendSelectApplet(false)
                 service.doBAC(BACKey(mrz.documentNumber, mrz.dateOfBirth, mrz.dateOfExpiry))
+                diag?.bacResult = "OK"
+                diag?.finalAccess = "BAC"
                 return
-            }
+            }.exceptionOrNull()
+            diag?.bacResult = bacError?.let { DebugReports.resultOf(it) }
         }
         throw ChipAccessException(refusal ?: IllegalStateException("PACE-MRZ refusé"))
+    }
+
+    /**
+     * Libellé de tentative masqué : « MRZ » ou « MRZ-candidat(pos=X) ». On révèle la
+     * POSITION retentée, jamais le caractère : sur une réussite par candidat, ce caractère
+     * serait la valeur RÉELLE de la puce — canal de fuite à ne pas ouvrir.
+     */
+    private fun candidateLabel(docNumber: String, original: String): String {
+        if (docNumber == original) return "MRZ"
+        val i = docNumber.indices.firstOrNull { docNumber[it] != original.getOrNull(it) } ?: return "MRZ-candidat"
+        return "MRZ-candidat(pos=$i)"
     }
 
     /** Issue d'une tentative PACE (multi-protocoles) pour une clé donnée. */
@@ -279,14 +321,19 @@ class CnieReader {
     private fun tryPace(
         service: PassportService,
         key: PACEKeySpec,
+        keyLabel: String,
         paceInfos: List<PACEInfo>,
+        diag: DiagnosticsCollector?,
     ): PaceOutcome {
         var lastError: Throwable? = null
         for (info in paceInfos) {
+            val start = System.nanoTime()
             try {
                 service.doPACE(key, info.objectIdentifier, PACEInfo.toParameterSpec(info.parameterId), null)
+                diag?.recordAttempt(keyLabel, info.objectIdentifier, "GA", "OK", elapsedMs(start))
                 return PaceOutcome.Success
             } catch (e: Exception) {
+                diag?.recordFailure(keyLabel, info.objectIdentifier, e, elapsedMs(start))
                 if (PaceError.isTagLost(e)) throw e
                 if (PaceError.isKeyRefused(e)) return PaceOutcome.KeyRefused(e)
                 lastError = e   // protocole rejeté ou aléa -> essayer le protocole suivant
@@ -295,7 +342,9 @@ class CnieReader {
         return PaceOutcome.Failed(lastError)
     }
 
-    private fun readPaceInfos(service: PassportService): List<PACEInfo> {
+    private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
+
+    private fun readPaceInfos(service: PassportService, diag: DiagnosticsCollector?): List<PACEInfo> {
         val cardAccess = runCatching {
             CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS, PassportService.DEFAULT_MAX_BLOCKSIZE))
         }.getOrNull() ?: return emptyList()
@@ -312,6 +361,9 @@ class CnieReader {
                 else -> 3                                             // IM et autres
             }
         }
+        diag?.recordCardAccess(
+            infos.map { DiagnosticsCollector.PACEInfoDescriptor(it.objectIdentifier, it.parameterId) }
+        )
         return infos
     }
 

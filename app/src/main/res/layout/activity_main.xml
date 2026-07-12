@@ -21,8 +21,9 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- En-tête -->
+        <!-- En-tête (appui long sur le titre = bascule le mode diagnostic). -->
         <TextView
+            android:id="@+id/headerTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/header_title"
@@ -848,6 +849,74 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="@string/new_check" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Détails techniques (mode diagnostic) : rapport caviardé, repliable. -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/diagCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:id="@+id/diagHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableEnd="@android:drawable/arrow_down_float"
+                    android:text="@string/diag_title"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/diagText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="monospace"
+                    android:textIsSelectable="true"
+                    android:textSize="11sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="veripuce-debug v1\n…" />
+
+                <LinearLayout
+                    android:id="@+id/diagActions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/diagCopy"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/diag_copy" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/diagShare"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/diag_share" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

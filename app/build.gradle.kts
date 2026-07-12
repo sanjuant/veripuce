@@ -16,6 +16,19 @@ android {
         // Surchargés en CI par le n° de run (VERSION_CODE) et le tag (VERSION_NAME).
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1"
+
+        // Commit court, pour le rapport de diagnostic. Depuis la CI (GIT_COMMIT) ou git local.
+        val gitCommit = System.getenv("GIT_COMMIT")?.take(7)
+            ?: runCatching {
+                ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                    .redirectErrorStream(true).start()
+                    .inputStream.bufferedReader().readText().trim()
+            }.getOrNull()?.takeIf { it.isNotBlank() } ?: "dev"
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {

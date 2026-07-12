@@ -48,6 +48,8 @@ class ScanActivity : AppCompatActivity() {
         const val EXTRA_EXP = "exp"
         const val EXTRA_DOCTYPE = "doctype"
         const val EXTRA_STATE = "state"
+        const val EXTRA_OCR_RES = "ocr_res"
+        const val EXTRA_OCR_ROT = "ocr_rot"
         const val EXTRA_PERMISSION_DENIED = "permission_denied"
         const val EXTRA_PERMISSION_PERMANENT = "permission_permanent"
         const val EXTRA_CAMERA_UNAVAILABLE = "camera_unavailable"
@@ -72,6 +74,10 @@ class ScanActivity : AppCompatActivity() {
     private var lowLightFrames = 0
     private var glareFrames = 0
     private var autoTorchDone = false
+
+    /** Résolution/rotation effectives de la dernière trame analysée (pour le diagnostic). */
+    @Volatile private var lastAnalysisRes: String? = null
+    @Volatile private var lastAnalysisRot: Int = 0
 
     /** Repli : renvoyer à la saisie manuelle (lumière insuffisante, MRZ illisible…). */
     private fun requestManualEntry() {
@@ -199,6 +205,8 @@ class ScanActivity : AppCompatActivity() {
             proxy.close()
             return
         }
+        lastAnalysisRes = "${media.width}x${media.height}"
+        lastAnalysisRot = proxy.imageInfo.rotationDegrees
         // Qualité de capture (plan Y, sans conversion bitmap) : torche auto en basse
         // lumière, indice de reflet sur le polycarbonate de la CNIe.
         runCatching { captureQuality(media) }.getOrNull()?.let(::updateCaptureHints)
@@ -252,7 +260,9 @@ class ScanActivity : AppCompatActivity() {
                     .putExtra(EXTRA_DOB, mrz.dateOfBirth)
                     .putExtra(EXTRA_EXP, mrz.dateOfExpiry)
                     .putExtra(EXTRA_DOCTYPE, mrz.docType.name)
-                    .putExtra(EXTRA_STATE, mrz.issuingState),
+                    .putExtra(EXTRA_STATE, mrz.issuingState)
+                    .putExtra(EXTRA_OCR_RES, lastAnalysisRes)
+                    .putExtra(EXTRA_OCR_ROT, lastAnalysisRot),
             )
             finish()
         }

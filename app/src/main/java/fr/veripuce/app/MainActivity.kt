@@ -2,6 +2,9 @@ package fr.veripuce.app
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -10,12 +13,14 @@ import android.graphics.BlurMaskFilter
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.IsoDep
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
@@ -41,7 +46,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.security.SecureRandom
 import java.security.Security
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Flux unique : scanner la MRZ -> le type de document est déduit -> lecture de la puce.
@@ -65,6 +74,18 @@ class MainActivity : AppCompatActivity() {
 
     /** Statut posé par le retour de scan : ne pas l'écraser au onResume qui suit. */
     private var statusSetByScan = false
+
+    /** Mode diagnostic (rapport technique caviardé), persistant, désactivé par défaut. */
+    private var diagMode = false
+    /** Collecteur de la carte courante (réutilisé de l'échec MRZ au repli CAN). */
+    private var diagCollector: DiagnosticsCollector? = null
+    /** Dernier rapport assemblé, consultable jusqu'à la lecture suivante. */
+    private var lastReport: DebugReport? = null
+    /** Sel de corrélation, généré par installation, JAMAIS exporté. */
+    private val corrSalt: String by lazy { installSalt() }
+    /** Résolution/rotation d'analyse effectives du dernier scan (pour le rapport). */
+    private var scanOcrRes: String? = null
+    private var scanOcrRot: Int? = null
 
     private lateinit var scanCard: View
     private lateinit var helpBtn: View
@@ -103,6 +124,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var readProgress: com.google.android.material.progressindicator.LinearProgressIndicator
     private lateinit var readStep: TextView
 
+    private lateinit var diagCard: MaterialCardView
+    private lateinit var diagText: TextView
+    private lateinit var diagActions: View
+
     private lateinit var resultCard: MaterialCardView
     private lateinit var photo: ShapeableImageView
     private lateinit var nameView: TextView
@@ -131,7 +156,9 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
             val data = res.data ?: return@registerForActivityResult
             when {
-                res.resultCode == RESULT_OK && data.getStringExtra(ScanActivity.EXTRA_MODE) == ScanActivity.MODE_MRZ ->
+                res.resultCode == RESULT_OK && data.getStringExtra(ScanActivity.EXTRA_MODE) == ScanActivity.MODE_MRZ -> {
+                    scanOcrRes = data.getStringExtra(ScanActivity.EXTRA_OCR_RES)
+                    scanOcrRot = data.getIntExtra(ScanActivity.EXTRA_OCR_ROT, -1).takeIf { it >= 0 }
                     onMrzScanned(
                         MrzOcr.MrzData(
                             documentNumber = data.getStringExtra(ScanActivity.EXTRA_DOC).orEmpty(),
@@ -143,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                             issuingState = data.getStringExtra(ScanActivity.EXTRA_STATE).orEmpty(),
                         )
                     )
+                }
 
                 res.resultCode == RESULT_OK && data.getStringExtra(ScanActivity.EXTRA_MODE) == ScanActivity.MODE_CAN -> {
                     canInput.setText(data.getStringExtra(ScanActivity.EXTRA_CAN))
@@ -241,6 +269,16 @@ class MainActivity : AppCompatActivity() {
             CscaStore.load(this@MainActivity).certificates
         }
 
+        // Mode diagnostic : persistant, basculé par appui long sur le titre.
+        diagCard = findViewById(R.id.diagCard)
+        diagText = findViewById(R.id.diagText)
+        diagActions = findViewById(R.id.diagActions)
+        diagMode = diagPrefs().getBoolean(PREF_DIAG_MODE, false)
+        findViewById<TextView>(R.id.headerTitle).setOnLongClickListener { toggleDiagMode(); true }
+        findViewById<TextView>(R.id.diagHeader).setOnClickListener { toggleDiagDetails() }
+        findViewById<MaterialButton>(R.id.diagCopy).setOnClickListener { copyReport() }
+        findViewById<MaterialButton>(R.id.diagShare).setOnClickListener { shareReport() }
+
         val hasCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
         scanMrz.visibility = if (hasCamera) View.VISIBLE else View.GONE
         scanMrz.setOnClickListener { launchScan(ScanActivity.MODE_MRZ) }
@@ -283,7 +321,9 @@ class MainActivity : AppCompatActivity() {
      */
     private fun onMrzScanned(mrz: MrzOcr.MrzData) {
         scanned = mrz
+        diagCollector = null   // nouvelle carte -> nouveau collecteur de diagnostic
         resultCard.visibility = View.GONE
+        diagCard.visibility = View.GONE
         scanCard.visibility = View.GONE
         helpBtn.visibility = View.GONE
         val isId = mrz.docType == MrzOcr.DocType.ID_CARD
@@ -320,9 +360,12 @@ class MainActivity : AppCompatActivity() {
     private fun resetToScan() {
         scanned = null
         canFallback = false
+        diagCollector = null
+        lastReport = null
         detectedCard.visibility = View.GONE
         resultCard.visibility = View.GONE
         readingCard.visibility = View.GONE
+        diagCard.visibility = View.GONE
         scanCard.visibility = View.VISIBLE
         helpBtn.visibility = View.VISIBLE
         canInput.text = null
@@ -372,11 +415,17 @@ class MainActivity : AppCompatActivity() {
 
         showReading()
         resultCard.visibility = View.GONE
+        // Un collecteur par carte (réutilisé de l'échec MRZ au repli CAN), seulement en
+        // mode diagnostic -> zéro impact quand il est inactif.
+        if (diagMode && diagCollector == null) diagCollector = DiagnosticsCollector()
+        val collector = diagCollector
         readJob = lifecycleScope.launch(Dispatchers.IO) {
             val result = runCatching {
-                CnieReader().read(isoDep, req.key, req.expectedMrz, cscaCerts.await()) { step ->
-                    runOnUiThread { showReadStep(step) }
-                }
+                CnieReader().read(
+                    isoDep, req.key, req.expectedMrz, cscaCerts.await(),
+                    onStep = { step -> runOnUiThread { showReadStep(step) } },
+                    diag = collector,
+                )
             }
             withContext(Dispatchers.Main) {
                 result
@@ -410,6 +459,12 @@ class MainActivity : AppCompatActivity() {
         readingCard.visibility = View.GONE
         // L'invite NFC redevient utile : il faut représenter le document.
         if (scanned != null) nfcPrompt.visibility = View.VISIBLE
+        // Classification finale pour le rapport : refus avéré vs aléa transitoire.
+        diagCollector?.apply {
+            classification = if (e is ChipAccessException) "refus avéré (6300)" else "transitoire"
+            if (finalAccess == null) finalAccess = "échec"
+        }
+        assembleReport(chip = null)
         if (e is ChipAccessException) {
             when {
                 // Repli CAN pour TOUT document TD1 (carte d'identité ou titre de séjour) :
@@ -433,6 +488,98 @@ class MainActivity : AppCompatActivity() {
         // interrompue) : inviter à re-présenter la carte, SANS proposer le CAN — la clé
         // MRZ est conservée pour le prochain essai.
         warn(getString(R.string.read_interrupted))
+    }
+
+    // ---- Rapport de diagnostic technique caviardé ----
+
+    /** Assemble le rapport (caviardé à la construction) et l'affiche si le mode est actif. */
+    private fun assembleReport(chip: ReadResult?) {
+        val collector = diagCollector ?: return
+        lastReport = DebugReports.build(
+            env = buildEnv(),
+            scanned = scanned,
+            chip = chip,
+            diag = collector,
+            salt = corrSalt,
+            includeExpiryYear = INCLUDE_EXPIRY_YEAR,
+        )
+        maybeShowDiagnostics()
+    }
+
+    private fun buildEnv(): DebugEnv {
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }
+            .getOrNull() ?: "?"
+        return DebugEnv(
+            appVersion = version,
+            commit = BuildConfig.GIT_COMMIT,
+            timestampIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(Date()),
+            device = "${Build.MANUFACTURER} ${Build.MODEL}",
+            androidRelease = Build.VERSION.RELEASE,
+            apiLevel = Build.VERSION.SDK_INT,
+            ocrEngine = OCR_ENGINE,
+            analysisResolution = scanOcrRes,
+            rotationDegrees = scanOcrRot,
+            libs = LIBS,
+        )
+    }
+
+    private fun maybeShowDiagnostics() {
+        val report = lastReport
+        if (diagMode && report != null) {
+            diagText.text = report.serialize()
+            diagCard.visibility = View.VISIBLE
+        } else {
+            diagCard.visibility = View.GONE
+        }
+    }
+
+    private fun toggleDiagMode() {
+        diagMode = !diagMode
+        diagPrefs().edit().putBoolean(PREF_DIAG_MODE, diagMode).apply()
+        Toast.makeText(this, if (diagMode) R.string.diag_on else R.string.diag_off, Toast.LENGTH_SHORT).show()
+        maybeShowDiagnostics()
+    }
+
+    private fun toggleDiagDetails() {
+        val show = diagText.visibility != View.VISIBLE
+        diagText.visibility = if (show) View.VISIBLE else View.GONE
+        diagActions.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun copyReport() {
+        val text = lastReport?.serialize() ?: return
+        (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+            .setPrimaryClip(ClipData.newPlainText("veripuce-debug", text))
+        Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun shareReport() {
+        val text = lastReport?.serialize() ?: return
+        val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diag_share_subject))
+            .putExtra(Intent.EXTRA_TEXT, text)
+        startActivity(Intent.createChooser(send, getString(R.string.diag_share)))
+    }
+
+    private fun diagPrefs() = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+
+    /** Sel de corrélation par installation ; ne quitte JAMAIS l'appareil (SHA-256 interne). */
+    private fun installSalt(): String {
+        val prefs = diagPrefs()
+        prefs.getString(PREF_SALT, null)?.let { return it }
+        val bytes = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        val salt = bytes.joinToString("") { "%02x".format(it) }
+        prefs.edit().putString(PREF_SALT, salt).apply()
+        return salt
+    }
+
+    private companion object {
+        const val PREF_NAME = "veripuce_diag"
+        const val PREF_DIAG_MODE = "diag_mode"
+        const val PREF_SALT = "corr_salt"
+        const val INCLUDE_EXPIRY_YEAR = true
+        const val OCR_ENGINE = "mlkit-text-recognition 16.0.1 (latin, bundled)"
+        const val LIBS = "JMRTD 0.8.6, scuba-sc-android 0.0.26, ML Kit 16.0.1, BouncyCastle 1.84"
     }
 
     private data class AccessRequest(val key: AccessKey, val expectedMrz: MrzOcr.MrzData?)
@@ -607,6 +754,9 @@ class MainActivity : AppCompatActivity() {
         }
         // Le détail des vérifications vit avec le verdict, dans le même bandeau.
         checksContainer.visibility = View.VISIBLE
+
+        diagCollector?.classification = "succès"
+        assembleReport(chip = r)
     }
 
     /** Ligne « origine » : icône teintée + libellé (couleur atténuée pour les états non définitifs). */
