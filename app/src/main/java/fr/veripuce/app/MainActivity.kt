@@ -424,12 +424,17 @@ class MainActivity : AppCompatActivity() {
         // mode diagnostic -> zéro impact quand il est inactif.
         if (diagMode && diagCollector == null) diagCollector = DiagnosticsCollector()
         val collector = diagCollector
+        // Rotation de protocole : après un premier échec de lecture MRZ (souvent un gel de
+        // PACE-GM), on tente PACE-IM en tête au tap suivant — certaines cartes ne lisent
+        // qu'en IM. Chaque tap est une connexion NFC fraîche.
+        val preferIm = mrzFailures >= 1
         readJob = lifecycleScope.launch(Dispatchers.IO) {
             val result = runCatching {
                 CnieReader().read(
                     isoDep, req.key, req.expectedMrz, cscaCerts.await(),
                     onStep = { step -> runOnUiThread { showReadStep(step) } },
                     diag = collector,
+                    preferIm = preferIm,
                 )
             }
             withContext(Dispatchers.Main) {

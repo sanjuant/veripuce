@@ -49,9 +49,27 @@ enum class ReadStep(val percent: Int) {
 
 class CnieReader {
 
-    private companion object {
+    companion object {
         /** Racine des OIDs PACE (BSI TR-03110) : .1/.2 = GM, .3/.4 = IM, .6 = CAM. */
-        const val OID_PACE = "0.4.0.127.0.7.2.2.4"
+        internal const val OID_PACE = "0.4.0.127.0.7.2.2.4"
+
+        /**
+         * Rang de préférence d'un protocole PACE (plus petit = essayé en premier).
+         * GM d'abord par défaut ; IM d'abord si [preferIm] (rotation après un gel de GM).
+         */
+        internal fun paceRank(oid: String, preferIm: Boolean): Int {
+            val isGm = oid.startsWith("$OID_PACE.1.") || oid.startsWith("$OID_PACE.2.") // DH-GM / ECDH-GM
+            val isIm = oid.startsWith("$OID_PACE.3.") || oid.startsWith("$OID_PACE.4.") // DH-IM / ECDH-IM
+            val isCam = oid.startsWith("$OID_PACE.6.")                                  // ECDH-CAM
+            return when {
+                preferIm && isIm -> 0
+                preferIm && isGm -> 1
+                !preferIm && isGm -> 0
+                !preferIm && isIm -> 1
+                isCam -> 2
+                else -> 3
+            }
+        }
     }
 
     /**
@@ -60,6 +78,9 @@ class CnieReader {
      * @param onStep      callback de progression (appelé depuis le thread de lecture).
      * @param diag        collecteur de diagnostic OPTIONNEL (défaut null -> aucune collecte,
      *                    comportement de lecture strictement inchangé).
+     * @param preferIm    ordonner PACE-IM (Integrated Mapping) AVANT GM. Utilisé au tap
+     *                    suivant quand GM a « gelé » (TagLost) : certaines cartes plantent
+     *                    en GM mais lisent en IM, qui évite l'échange DH supplémentaire.
      */
     fun read(
         isoDep: IsoDep,
@@ -68,6 +89,7 @@ class CnieReader {
         cscaCerts: Collection<X509Certificate> = emptyList(),
         onStep: ((ReadStep) -> Unit)? = null,
         diag: DiagnosticsCollector? = null,
+        preferIm: Boolean = false,
     ): ReadResult {
         isoDep.timeout = 15_000
         diag?.apply {
@@ -100,8 +122,8 @@ class CnieReader {
             //    transitoire (perte de contact, glitch NFC) remonte tel quel -> l'UI invite
             //    à re-présenter la carte sans proposer le CAN.
             when (key) {
-                is AccessKey.Can -> openWithCan(svc, key.can, diag)
-                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag)
+                is AccessKey.Can -> openWithCan(svc, key.can, diag, preferIm)
+                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, preferIm)
             }
 
             // 2) Lecture des data groups sur octets BRUTS on-card (cf. passive auth).
@@ -214,9 +236,9 @@ class CnieReader {
     }
 
     /** CNIe : PACE-CAN. Le CAN = les 6 chiffres imprimés au recto. */
-    private fun openWithCan(service: PassportService, can: String, diag: DiagnosticsCollector?) {
+    private fun openWithCan(service: PassportService, can: String, diag: DiagnosticsCollector?, preferIm: Boolean) {
         require(can.length == 6 && can.all { it.isDigit() }) { "Le CAN doit faire 6 chiffres." }
-        val paceInfos = readPaceInfos(service, diag)
+        val paceInfos = readPaceInfos(service, diag, preferIm)
         when (val outcome = tryPace(service, PACEKeySpec.createCANKey(can), "CAN", paceInfos, diag)) {
             PaceOutcome.Success -> { service.sendSelectApplet(true); diag?.finalAccess = "CAN" }
             is PaceOutcome.KeyRefused -> throw ChipAccessException(outcome.error)  // mauvais CAN
@@ -237,8 +259,9 @@ class CnieReader {
         mrz: AccessKey.Mrz,
         expectedMrz: MrzOcr.MrzData?,
         diag: DiagnosticsCollector?,
+        preferIm: Boolean,
     ) {
-        val paceInfos = readPaceInfos(service, diag)
+        val paceInfos = readPaceInfos(service, diag, preferIm)
         // État émetteur si (et seulement si) le document est une carte d'identité TD1.
         val idCardState = expectedMrz?.takeIf { it.docType == MrzOcr.DocType.ID_CARD }?.issuingState
         val isIdCard = idCardState != null
@@ -344,23 +367,23 @@ class CnieReader {
 
     private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
 
-    private fun readPaceInfos(service: PassportService, diag: DiagnosticsCollector?): List<PACEInfo> {
+    private fun readPaceInfos(
+        service: PassportService,
+        diag: DiagnosticsCollector?,
+        preferIm: Boolean,
+    ): List<PACEInfo> {
         val cardAccess = runCatching {
             CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS, PassportService.DEFAULT_MAX_BLOCKSIZE))
         }.getOrNull() ?: return emptyList()
         // EF.CardAccess peut annoncer PLUSIEURS protocoles PACE, et JMRTD les stocke
         // dans un HashSet : « prendre le premier » est NON DÉTERMINISTE. On trie
-        // explicitement — GM d'abord (le Generic Mapping est le mieux éprouvé dans
-        // JMRTD ; ReadID et NFCPassportReader, GM-only, lisent la CNIe) — et on les
-        // essaiera TOUTES en cas de refus.
-        val infos = cardAccess.securityInfos.filterIsInstance<PACEInfo>().sortedBy { info ->
-            when {
-                info.objectIdentifier.startsWith("$OID_PACE.2.") -> 0 // ECDH-GM
-                info.objectIdentifier.startsWith("$OID_PACE.1.") -> 1 // DH-GM
-                info.objectIdentifier.startsWith("$OID_PACE.6.") -> 2 // ECDH-CAM
-                else -> 3                                             // IM et autres
-            }
-        }
+        // explicitement. Par défaut GM d'abord (Generic Mapping, le mieux éprouvé ;
+        // ReadID et NFCPassportReader, GM-only, lisent la CNIe). Après un gel de GM,
+        // [preferIm] met IM en tête — voir la rotation de protocole côté UI.
+        // (tryPace abandonne dès un TagLost : seul le protocole de TÊTE est réellement
+        //  tenté par tap ; c'est donc l'ORDRE qui choisit ce qu'on essaie.)
+        val infos = cardAccess.securityInfos.filterIsInstance<PACEInfo>()
+            .sortedBy { paceRank(it.objectIdentifier, preferIm) }
         diag?.recordCardAccess(
             infos.map { DiagnosticsCollector.PACEInfoDescriptor(it.objectIdentifier, it.parameterId) }
         )
