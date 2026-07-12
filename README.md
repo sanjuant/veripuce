@@ -60,10 +60,13 @@ aucune donnée personnelle) est disponible :
 
 Pour comprendre *comment* ça marche, le dossier [**`docs/`**](docs/README.md) :
 
+- [**Glossaire**](docs/glossaire.md) — tous les sigles (MRZ, CAN, DG, SOD, PACE, CSCA…) en français simple. *À lire en premier.*
+- [**Architecture**](docs/architecture.md) — carte des fichiers, le « voyage d'une lecture » (schémas + pseudocode), machines à états.
 - [**Algorithmes**](docs/algorithmes.md) — OCR de la MRZ, passive authentication, anti-clone.
 - [**Calcul des clés d'accès**](docs/cles-acces.md) — dérivation MRZ/CAN, candidats sur paires aveugles, PACE/BAC.
 - [**Sources & données**](docs/sources.md) — certificats CSCA (ICAO + BSI + ANTS), jeux de test.
 - [**Sécurité & confidentialité**](docs/securite-confidentialite.md) — on-device, floutage, rapport caviardé, EAC.
+- [**Dépannage**](docs/depannage.md) — lire le rapport de diagnostic, arbre de décision des échecs de lecture.
 
 ## Installation
 
