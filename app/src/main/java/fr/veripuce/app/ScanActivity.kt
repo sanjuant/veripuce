@@ -76,6 +76,7 @@ class ScanActivity : AppCompatActivity() {
     private var lowLightFrames = 0
     private var glareFrames = 0
     private var autoTorchDone = false
+    private var glareHintShown = false
 
     /** Résolution/rotation effectives de la dernière trame analysée (pour le diagnostic). */
     @Volatile private var lastAnalysisRes: String? = null
@@ -217,13 +218,12 @@ class ScanActivity : AppCompatActivity() {
             return
         }
         lastAnalysisRot = proxy.imageInfo.rotationDegrees
-        // Qualité de capture (plan Y, sans conversion bitmap) : torche auto en basse
-        // lumière, indice de reflet sur le polycarbonate de la CNIe.
-        runCatching { captureQuality(media) }.getOrNull()?.let(::updateCaptureHints)
-
         // On RECADRE sur la fenêtre du viseur avant l'OCR : sur une trame 12 Mpx, la MRZ
         // n'est qu'une lamelle -> ML Kit lit mal. Le crop densifie les caractères OCR-B.
-        val image = runCatching { mrzCrop(proxy) }.getOrNull()
+        // La qualité (reflet/lumière) est mesurée SUR CE CROP (la MRZ, mate et éclairée),
+        // pas sur toute l'image : le corps brillant de la carte et le fond sombre ne
+        // doivent pas déclencher de fausse alerte reflet ni de fausse basse-lumière.
+        val image = runCatching { mrzCropAndAssess(proxy) }.getOrNull()
         if (image == null) { proxy.close(); return }
         recognizer.process(image)
             .addOnSuccessListener { result ->
@@ -245,7 +245,7 @@ class ScanActivity : AppCompatActivity() {
      * trame 12 Mpx où les caractères OCR-B sont minuscules. Les bitmaps intermédiaires
      * sont recyclés pour limiter la pression GC.
      */
-    private fun mrzCrop(proxy: ImageProxy): InputImage {
+    private fun mrzCropAndAssess(proxy: ImageProxy): InputImage {
         val rot = proxy.imageInfo.rotationDegrees
         val sensor = proxy.toBitmap()
         val upright = if (rot == 0) {
@@ -257,8 +257,31 @@ class ScanActivity : AppCompatActivity() {
         val roi = ScanRoi.mrzRoi(upright.width, upright.height, roiRatio, roiWidthFraction, roiVerticalBias)
         val crop = Bitmap.createBitmap(upright, roi.left, roi.top, roi.width, roi.height)
             .also { if (it !== upright) upright.recycle() }
+        updateCaptureHints(cropQuality(crop))   // reflet/lumière mesurés sur la MRZ elle-même
         lastAnalysisRes = "${crop.width}x${crop.height} (ROI de ${proxy.width}x${proxy.height})"
         return InputImage.fromBitmap(crop, 0)
+    }
+
+    /** Luminance moyenne + fraction de pixels saturés du CROP MRZ (échantillonné). */
+    private fun cropQuality(bmp: Bitmap): CaptureQuality {
+        val step = (minOf(bmp.width, bmp.height) / 40).coerceAtLeast(1)
+        var sum = 0L
+        var bright = 0
+        var count = 0
+        var y = 0
+        while (y < bmp.height) {
+            var x = 0
+            while (x < bmp.width) {
+                val p = bmp.getPixel(x, y)
+                val luma = (((p ushr 16) and 0xFF) * 77 + ((p ushr 8) and 0xFF) * 151 + (p and 0xFF) * 28) ushr 8
+                sum += luma
+                if (luma > 250) bright++
+                count++
+                x += step
+            }
+            y += step
+        }
+        return if (count == 0) CaptureQuality(128, 0f) else CaptureQuality((sum / count).toInt(), bright.toFloat() / count)
     }
 
     /** Appelé sur le thread principal (callbacks ML Kit) — pas de course sur l'état. */
@@ -310,40 +333,14 @@ class ScanActivity : AppCompatActivity() {
         }
     }
 
-    /** Luminance moyenne et fraction de pixels saturés sur la bande centrale (plan Y). */
+    /** Luminance moyenne et fraction de pixels saturés (mesurées sur le crop MRZ). */
     private data class CaptureQuality(val avgLuma: Int, val glareFraction: Float)
-
-    private fun captureQuality(image: android.media.Image): CaptureQuality {
-        val plane = image.planes[0]
-        val buf = plane.buffer
-        val rowStride = plane.rowStride
-        val pixelStride = plane.pixelStride
-        val step = 16
-        var sum = 0L
-        var bright = 0
-        var count = 0
-        var row = image.height / 4
-        while (row < image.height * 3 / 4) {
-            val base = row * rowStride
-            var col = 0
-            while (col < image.width) {
-                val idx = base + col * pixelStride
-                if (idx >= buf.limit()) break
-                val v = buf.get(idx).toInt() and 0xFF
-                sum += v
-                if (v > 250) bright++
-                count++
-                col += step
-            }
-            row += step
-        }
-        return if (count == 0) CaptureQuality(128, 0f)
-        else CaptureQuality((sum / count).toInt(), bright.toFloat() / count)
-    }
 
     private fun updateCaptureHints(q: CaptureQuality) {
         lowLightFrames = if (q.avgLuma < 60) lowLightFrames + 1 else 0
-        glareFrames = if (q.glareFraction > 0.015f) glareFrames + 1 else 0
+        // Seuil de reflet mesuré SUR LA MRZ (mate) : on peut être bien plus permissif
+        // qu'avant, où l'on mesurait le corps brillant de la carte et déclenchait à tort.
+        glareFrames = if (q.glareFraction > 0.04f) glareFrames + 1 else 0
         runOnUiThread {
             if (finished.get()) return@runOnUiThread
             // Basse lumière soutenue -> torche auto (une seule fois, sans écraser un choix manuel).
@@ -353,8 +350,16 @@ class ScanActivity : AppCompatActivity() {
                 autoTorchDone = true
                 setTorch(true)
             }
-            // Reflet spéculaire répété -> conseiller d'incliner la carte.
-            if (glareFrames >= 10) findViewById<TextView>(R.id.scanHint).setText(R.string.scan_glare)
+            val hint = findViewById<TextView>(R.id.scanHint)
+            if (glareFrames >= 10) {
+                // Reflet spéculaire répété SUR LA MRZ -> conseiller d'incliner la carte.
+                hint.setText(R.string.scan_glare)
+                glareHintShown = true
+            } else if (glareHintShown && glareFrames == 0) {
+                // Reflet dissipé : restaurer l'indice normal, ne pas laisser l'alerte bloquer.
+                hint.setText(if (mode == MODE_CAN) R.string.scan_hint_can else R.string.scan_hint_mrz)
+                glareHintShown = false
+            }
         }
     }
 
