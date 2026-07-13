@@ -41,8 +41,12 @@ object MrzKeyCandidates {
      * Toutes les variantes conservent le chiffre de contrôle ICAO (chaque paire aveugle a un
      * écart ≡ 0 mod 10, et une somme de tels écarts l'est aussi) — inutile de re-valider.
      * Ordre déterministe, l'original en premier.
+     *
+     * La borne par défaut (16) couvre l'ensemble COMPLET des combinaisons pour ~3 positions
+     * ambiguës — y compris la combinaison où TOUTES sont permutées à la fois (cas d'un OCR
+     * biaisé sur plusieurs glyphes). Une borne trop basse s'arrêterait avant ces combinaisons.
      */
-    fun documentNumberCandidates(documentNumber: String, limit: Int = 10): List<String> {
+    fun documentNumberCandidates(documentNumber: String, limit: Int = 16): List<String> {
         val out = LinkedHashSet<String>()
         out += documentNumber
         // Parcours en largeur : chaque « vague » applique UNE substitution de plus qu'à la vague

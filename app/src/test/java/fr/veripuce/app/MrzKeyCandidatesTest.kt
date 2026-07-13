@@ -67,6 +67,15 @@ class MrzKeyCandidatesTest {
     }
 
     @Test
+    fun `la borne par defaut couvre la combinaison ou TOUTES les positions sont permutees`() {
+        // Cas d'un OCR biaisé sur plusieurs glyphes : 3 positions ambiguës (G/6, L/1, S/8).
+        // La variante où les TROIS sont permutées d'un coup (« 618 ») doit figurer — une borne
+        // trop basse s'arrêtait avant, laissant le vrai numéro hors des candidats.
+        val cands = MrzKeyCandidates.documentNumberCandidates("GLS")
+        assertTrue("combinaison 3-flips manquante : $cands", cands.contains("618"))
+    }
+
+    @Test
     fun `differOnlyByBlindPairs - vrai pour une seule paire aveugle`() {
         assertTrue(MrzKeyCandidates.differOnlyByBlindPairs("X4RTGPFW4", "X4RT6PFW4"))  // G<->6
         assertTrue(MrzKeyCandidates.differOnlyByBlindPairs("AB1CD", "ABLCD"))          // 1<->L
