@@ -493,7 +493,14 @@ class MainActivity : AppCompatActivity() {
         // n'est pas un passeport peut avoir un CAN.
         val hasCan = req.key is AccessKey.Mrz && card != null && card.docType != MrzOcr.DocType.PASSPORT
         when {
-            hasCan && (keyRefused || mrzFailures >= MRZ_FAILURES_BEFORE_CAN) -> {
+            hasCan -> {
+                // Échec de lecture MRZ sur une carte d'identité. Le CAN (recto) est une clé
+                // alternative FIABLE : 6 chiffres imprimés, sans ambiguïté de glyphe — là où
+                // un n° de document peut porter des paires aveugles (G/6, L/1…) qui rendent la
+                // clé PACE-MRZ incertaine et font GELER certaines puces. On le propose DÈS le
+                // premier échec, sans bloquer une nouvelle tentative MRZ : tant que le CAN
+                // n'est pas saisi, buildRequest retente la MRZ (rotation IM) puis, après
+                // MRZ_FAILURES_BEFORE_CAN, attend le CAN pour ne plus boucler sur la puce.
                 canFallback = true
                 canGroup.visibility = View.VISIBLE
                 nfcPromptText.setText(R.string.can_fallback)
@@ -596,8 +603,8 @@ class MainActivity : AppCompatActivity() {
         const val INCLUDE_EXPIRY_YEAR = true
         /** Échecs de clé MRZ consécutifs (carte d'identité) avant de proposer le CAN. */
         const val MRZ_FAILURES_BEFORE_CAN = 2
-        const val OCR_ENGINE = "mlkit-text-recognition 16.0.1 (latin, bundled)"
-        const val LIBS = "JMRTD 0.8.6, scuba-sc-android 0.0.26, ML Kit 16.0.1, BouncyCastle 1.84"
+        const val OCR_ENGINE = "tesseract 5 LSTM + modèle OCR-B/MRZ (bundled)"
+        const val LIBS = "JMRTD 0.8.6, scuba-sc-android 0.0.26, Tesseract4Android 4.9.0, BouncyCastle 1.84"
     }
 
     private data class AccessRequest(val key: AccessKey, val expectedMrz: MrzOcr.MrzData?)
@@ -607,13 +614,18 @@ class MainActivity : AppCompatActivity() {
         val mrz = scanned
         if (mrz != null) {
             if (mrz.docType != MrzOcr.DocType.PASSPORT && canFallback) {
-                // Repli : la puce a refusé la clé MRZ -> le CAN (recto) devient requis.
+                // Repli proposé. Si le CAN (recto) est saisi, on l'utilise — clé FIABLE, sans
+                // ambiguïté de glyphe. Sinon on NE bloque pas tout de suite : on retente la clé
+                // MRZ (rotation IM) tant qu'on n'a pas épuisé MRZ_FAILURES_BEFORE_CAN essais,
+                // PUIS on attend le CAN pour ne plus boucler sur une puce qui gèle en PACE-MRZ.
                 val can = canInput.text?.toString()?.trim().orEmpty()
-                return if (can.length != 6 || !can.all { it.isDigit() }) {
-                    warn(getString(R.string.enter_can)); null
-                } else {
-                    AccessRequest(AccessKey.Can(can), mrz)
+                if (can.length == 6 && can.all { it.isDigit() }) {
+                    return AccessRequest(AccessKey.Can(can), mrz)
                 }
+                if (mrzFailures >= MRZ_FAILURES_BEFORE_CAN) {
+                    warn(getString(R.string.enter_can)); return null
+                }
+                // sinon : nouvelle tentative MRZ (clé ci-dessous), le CAN restant proposé.
             }
             // Cas nominal, tous documents : clé dérivée de la MRZ (PACE-MRZ, repli BAC).
             // Les CNIe l'acceptent aussi (applet « PACE passwords: MRZ, CAN, PIN, PUK »).

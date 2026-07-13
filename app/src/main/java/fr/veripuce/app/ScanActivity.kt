@@ -367,7 +367,7 @@ class ScanActivity : AppCompatActivity() {
         return if (count == 0) CaptureQuality(128, 0f) else CaptureQuality((sum / count).toInt(), bright.toFloat() / count)
     }
 
-    /** Appelé sur le thread principal (callbacks ML Kit) — pas de course sur l'état. */
+    /** Appelé sur le thread principal (remarshalé depuis le thread d'analyse) — pas de course. */
     private fun onText(text: String) {
         if (finished.get()) return
         when (mode) {
