@@ -257,9 +257,48 @@ class ScanActivity : AppCompatActivity() {
         val roi = ScanRoi.mrzRoi(upright.width, upright.height, roiRatio, roiWidthFraction, roiVerticalBias)
         val crop = Bitmap.createBitmap(upright, roi.left, roi.top, roi.width, roi.height)
             .also { if (it !== upright) upright.recycle() }
-        updateCaptureHints(cropQuality(crop))   // reflet/lumière mesurés sur la MRZ elle-même
-        lastAnalysisRes = "${crop.width}x${crop.height} (ROI de ${proxy.width}x${proxy.height})"
-        return InputImage.fromBitmap(crop, 0)
+        // Qualité (reflet/lumière) mesurée sur le crop BRUT — reflète l'image réelle, avant
+        // que l'étirement de contraste ne modifie luminance et saturation.
+        updateCaptureHints(cropQuality(crop))
+        val w = crop.width
+        val h = crop.height
+        // Niveaux de gris + étirement de contraste : rend lisibles les MRZ gravées laser en
+        // faible contraste (cf. MrzImage). Recycle le crop brut.
+        val enhanced = enhanceMrz(crop)
+        lastAnalysisRes = "${w}x${h} contraste↑ (ROI de ${proxy.width}x${proxy.height})"
+        return InputImage.fromBitmap(enhanced, 0)
+    }
+
+    /**
+     * Niveaux de gris + étirement de contraste (percentiles robustes, cf. [MrzImage]) du crop
+     * MRZ, avant de le passer à ML Kit. Un seul balayage pour l'histogramme, un second pour
+     * appliquer la LUT. Le bitmap source est recyclé ; un nouveau bitmap gris est renvoyé.
+     */
+    private fun enhanceMrz(src: Bitmap): Bitmap {
+        val w = src.width
+        val h = src.height
+        val px = IntArray(w * h)
+        src.getPixels(px, 0, w, 0, 0, w, h)
+
+        val luma = IntArray(px.size)
+        val hist = IntArray(256)
+        for (i in px.indices) {
+            val p = px[i]
+            val y = (((p ushr 16) and 0xFF) * 77 + ((p ushr 8) and 0xFF) * 151 + (p and 0xFF) * 28) ushr 8
+            luma[i] = y
+            hist[y]++
+        }
+
+        val lut = MrzImage.contrastLut(hist)
+        for (i in px.indices) {
+            val y = lut[luma[i]]
+            px[i] = (0xFF shl 24) or (y shl 16) or (y shl 8) or y
+        }
+
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        out.setPixels(px, 0, w, 0, 0, w, h)
+        src.recycle()
+        return out
     }
 
     /** Luminance moyenne + fraction de pixels saturés du CROP MRZ (échantillonné). */
