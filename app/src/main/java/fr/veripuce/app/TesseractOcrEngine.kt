@@ -21,20 +21,34 @@ import java.io.File
  */
 class TesseractOcrEngine private constructor(private val api: TessBaseAPI) : OcrEngine {
 
+    // recognize() tourne sur le thread d'analyse caméra, close() est appelé sur le thread UI
+    // (onDestroy). TessBaseAPI est natif et NON thread-safe : recycler pendant une
+    // reconnaissance planterait le natif (SIGSEGV). Ce verrou les rend mutuellement exclusifs,
+    // et le drapeau [closed] neutralise toute reconnaissance postérieure à la libération.
+    private val lock = Any()
+    private var closed = false
+
     override fun recognize(bitmap: Bitmap): String? {
-        return try {
-            api.setImage(bitmap)
-            val text = api.getUTF8Text()
-            api.clear()                       // libère l'image native après chaque trame
-            text?.takeIf { it.isNotBlank() }
-        } catch (t: Throwable) {
-            Log.w(TAG, "reconnaissance Tesseract en échec", t)
-            null
+        synchronized(lock) {
+            if (closed) return null
+            return try {
+                api.setImage(bitmap)
+                val text = api.getUTF8Text()
+                api.clear()                   // libère l'image native après chaque trame
+                text?.takeIf { it.isNotBlank() }
+            } catch (t: Throwable) {
+                Log.w(TAG, "reconnaissance Tesseract en échec", t)
+                null
+            }
         }
     }
 
     override fun close() {
-        runCatching { api.recycle() }
+        synchronized(lock) {                  // attend une reconnaissance en cours
+            if (closed) return                // idempotent : jamais deux recycle()
+            closed = true
+            runCatching { api.recycle() }
+        }
     }
 
     companion object {

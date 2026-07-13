@@ -471,38 +471,23 @@ class MainActivity : AppCompatActivity() {
     private fun showReadStep(step: ReadStep) = renderReadStep(step)
 
     /**
-     * Rendu de l'étape de lecture. Le handshake PACE (CONNECT) peut durer ~6 s PAR TENTATIVE et
-     * peut être retenté (rotation IM, itération des variantes du numéro) : on affiche alors une
-     * barre INDÉTERMINÉE animée + le n° d'essai — l'utilisateur voit qu'une lecture est en cours
-     * (et laquelle), au lieu d'une barre figée. Les étapes suivantes sont déterministes.
+     * Libellé de l'étape de lecture. La barre [readProgress] est INDÉTERMINÉE en permanence
+     * (définie dans le layout) : elle s'anime tant que la carte de lecture est visible, sans
+     * aucune bascule de mode au runtime (la bascule déterminé<->indéterminé de Material lève une
+     * exception si mal synchronisée — on l'évite entièrement). Au handshake (CONNECT), qui peut
+     * être retenté (rotation IM, itération des variantes), on annexe le n° d'essai.
      */
     private fun renderReadStep(step: ReadStep) {
-        if (step == ReadStep.CONNECT) {
-            setReadIndeterminate(true)
-            readStep.text = if (readAttempt > 1)
-                getString(R.string.reading_connect_attempt, readAttempt)
-            else getString(R.string.reading_connect)
-            return
+        val label = when (step) {
+            ReadStep.CONNECT -> R.string.reading_connect
+            ReadStep.IDENTITY -> R.string.reading_identity
+            ReadStep.PHOTO -> R.string.reading_photo
+            ReadStep.SECURITY -> R.string.reading_security
+            ReadStep.VERIFY -> R.string.reading_verify
         }
-        setReadIndeterminate(false)
-        readProgress.setProgressCompat(step.percent, true)
-        readStep.setText(
-            when (step) {
-                ReadStep.CONNECT -> R.string.reading_connect
-                ReadStep.IDENTITY -> R.string.reading_identity
-                ReadStep.PHOTO -> R.string.reading_photo
-                ReadStep.SECURITY -> R.string.reading_security
-                ReadStep.VERIFY -> R.string.reading_verify
-            },
-        )
-    }
-
-    /** Bascule la barre déterminée <-> indéterminée sans exception (cycle de visibilité). */
-    private fun setReadIndeterminate(indeterminate: Boolean) {
-        if (readProgress.isIndeterminate == indeterminate) return
-        readProgress.visibility = View.INVISIBLE
-        readProgress.isIndeterminate = indeterminate
-        readProgress.visibility = View.VISIBLE
+        readStep.text = if (step == ReadStep.CONNECT && readAttempt > 1)
+            getString(R.string.reading_connect_attempt, readAttempt)
+        else getString(label)
     }
 
     /**

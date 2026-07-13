@@ -569,7 +569,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:max="100"
+                    android:indeterminate="true"
+                    app:indeterminateAnimationType="disjoint"
                     app:trackCornerRadius="4dp"
                     app:trackThickness="8dp" />
 
