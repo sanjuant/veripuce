@@ -48,6 +48,25 @@ class MrzKeyCandidatesTest {
     }
 
     @Test
+    fun `genere les combinaisons multi-positions, pas seulement une substitution`() {
+        // « GL » a DEUX positions ambiguës (G<->6, L<->1) : le vrai numéro peut différer sur
+        // les deux -> la combinaison « 61 » doit figurer parmi les candidats.
+        val cands = MrzKeyCandidates.documentNumberCandidates("GL", limit = 10)
+        assertTrue(cands.contains("GL"))   // original
+        assertTrue(cands.contains("6L"))   // 1 substitution
+        assertTrue(cands.contains("G1"))   // 1 substitution
+        assertTrue(cands.contains("61"))   // 2 substitutions (combinaison)
+    }
+
+    @Test
+    fun `les variantes sont ordonnees par nombre de substitutions croissant`() {
+        val cands = MrzKeyCandidates.documentNumberCandidates("GL", limit = 10)
+        assertEquals("GL", cands.first())                         // original en premier
+        assertTrue(cands.indexOf("61") > cands.indexOf("6L"))     // 2 flips après 1 flip
+        assertTrue(cands.indexOf("61") > cands.indexOf("G1"))
+    }
+
+    @Test
     fun `differOnlyByBlindPairs - vrai pour une seule paire aveugle`() {
         assertTrue(MrzKeyCandidates.differOnlyByBlindPairs("X4RTGPFW4", "X4RT6PFW4"))  // G<->6
         assertTrue(MrzKeyCandidates.differOnlyByBlindPairs("AB1CD", "ABLCD"))          // 1<->L

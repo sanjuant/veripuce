@@ -86,6 +86,11 @@ class CnieReader {
      * @param preferIm    ordonner PACE-IM (Integrated Mapping) AVANT GM. Utilisé au tap
      *                    suivant quand GM a « gelé » (TagLost) : certaines cartes plantent
      *                    en GM mais lisent en IM, qui évite l'échange DH supplémentaire.
+     * @param mrzCandidateOffset index de départ dans la liste des variantes du numéro de
+     *                    document (paires aveugles). Sert à ITÉRER les candidats tap par tap :
+     *                    une puce qui GÈLE (TagLost) sur une clé fausse ne permet pas d'essayer
+     *                    la variante suivante dans la même session (tag perdu) — l'UI relance
+     *                    donc avec l'offset suivant. 0 = numéro tel que lu (cas nominal).
      */
     fun read(
         isoDep: IsoDep,
@@ -95,6 +100,7 @@ class CnieReader {
         onStep: ((ReadStep) -> Unit)? = null,
         diag: DiagnosticsCollector? = null,
         preferIm: Boolean = false,
+        mrzCandidateOffset: Int = 0,
     ): ReadResult {
         // Délai COURT pour le handshake PACE : un échange normal répond en <2 s ; un gel
         // (ex. GM sur une carte qui couple mal) échoue ainsi en ~6 s au lieu de 15 s, ce
@@ -132,7 +138,7 @@ class CnieReader {
             //    à re-présenter la carte sans proposer le CAN.
             when (key) {
                 is AccessKey.Can -> openWithCan(svc, key.can, diag, preferIm)
-                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, preferIm)
+                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, preferIm, mrzCandidateOffset)
             }
 
             // Session ouverte : marge plus large pour la lecture des data groups (DG2 photo).
@@ -272,6 +278,7 @@ class CnieReader {
         expectedMrz: MrzOcr.MrzData?,
         diag: DiagnosticsCollector?,
         preferIm: Boolean,
+        mrzCandidateOffset: Int = 0,
     ) {
         val paceInfos = readPaceInfos(service, diag, preferIm)
         // État émetteur si (et seulement si) le document est une carte d'identité TD1.
@@ -293,8 +300,12 @@ class CnieReader {
             listOf(mrz.documentNumber)
         }
 
+        // Itération tap par tap : on démarre au candidat [mrzCandidateOffset]. Sur une puce qui
+        // REFUSE proprement (6300), la boucle ci-dessous essaie tous les candidats suivants dans
+        // CE tap. Sur une puce qui GÈLE (TagLost), tryPace relance l'exception -> le tap s'arrête
+        // et l'UI reprend au candidat suivant au tap d'après (le tag est perdu, session morte).
         var refusal: Throwable? = null
-        for (docNumber in candidates) {
+        for (docNumber in candidates.drop(mrzCandidateOffset.coerceIn(0, candidates.size))) {
             // Libellé masqué : n° original -> "MRZ" ; variante -> "MRZ-candidat(pos=X)".
             val label = candidateLabel(docNumber, mrz.documentNumber)
             val key = PACEKeySpec.createMRZKey(BACKey(docNumber, mrz.dateOfBirth, mrz.dateOfExpiry))

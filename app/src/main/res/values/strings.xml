@@ -29,6 +29,7 @@
     <string name="enter_mrz">Renseigne le n° de document et les 2 dates (AAMMJJ).</string>
     <string name="reading_title">Puce détectée — ne bouge plus&#160;!</string>
     <string name="reading_connect">Connexion sécurisée à la puce…</string>
+    <string name="reading_connect_attempt">Connexion sécurisée à la puce… (essai %1$d)</string>
     <string name="reading_identity">Lecture de l\'identité…</string>
     <string name="reading_photo">Lecture de la photo…</string>
     <string name="reading_security">Lecture des éléments de sécurité…</string>

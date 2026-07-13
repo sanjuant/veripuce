@@ -75,6 +75,15 @@ class MainActivity : AppCompatActivity() {
     /** Nombre d'échecs de lecture par clé MRZ pour la carte courante (réinitialisé par carte). */
     private var mrzFailures = 0
 
+    /** Itération des variantes du numéro (paires aveugles) tap par tap : candidat courant,
+     *  nombre total de variantes, et protocole du dernier tap (pour décider quand avancer). */
+    private var mrzOffset = 0
+    private var mrzCandidateCount = 1
+    private var lastPreferIm = false
+
+    /** N° de tentative de lecture pour la carte courante (indicateur visuel « essai N »). */
+    private var readAttempt = 0
+
     /** Statut posé par le retour de scan : ne pas l'écraser au onResume qui suit. */
     private var statusSetByScan = false
 
@@ -327,6 +336,11 @@ class MainActivity : AppCompatActivity() {
     private fun onMrzScanned(mrz: MrzOcr.MrzData) {
         scanned = mrz
         mrzFailures = 0
+        mrzOffset = 0
+        readAttempt = 0
+        // Variantes à itérer si la clé MRZ échoue (carte d'identité uniquement, cf. openWithMrz).
+        mrzCandidateCount = if (mrz.docType == MrzOcr.DocType.ID_CARD)
+            MrzKeyCandidates.documentNumberCandidates(mrz.documentNumber).size else 1
         diagCollector = null   // nouvelle carte -> nouveau collecteur de diagnostic
         resultCard.visibility = View.GONE
         diagCard.visibility = View.GONE
@@ -367,6 +381,9 @@ class MainActivity : AppCompatActivity() {
         scanned = null
         canFallback = false
         mrzFailures = 0
+        mrzOffset = 0
+        mrzCandidateCount = 1
+        readAttempt = 0
         diagCollector = null
         lastReport = null
         detectedCard.visibility = View.GONE
@@ -420,6 +437,7 @@ class MainActivity : AppCompatActivity() {
 
         val req = buildRequest() ?: return
 
+        readAttempt++
         showReading()
         resultCard.visibility = View.GONE
         // Un collecteur par carte (réutilisé de l'échec MRZ au repli CAN), seulement en
@@ -430,6 +448,8 @@ class MainActivity : AppCompatActivity() {
         // PACE-GM), on tente PACE-IM en tête au tap suivant — certaines cartes ne lisent
         // qu'en IM. Chaque tap est une connexion NFC fraîche.
         val preferIm = mrzFailures >= 1
+        lastPreferIm = preferIm
+        val candidateOffset = mrzOffset
         readJob = lifecycleScope.launch(Dispatchers.IO) {
             val result = runCatching {
                 CnieReader().read(
@@ -437,6 +457,7 @@ class MainActivity : AppCompatActivity() {
                     onStep = { step -> runOnUiThread { showReadStep(step) } },
                     diag = collector,
                     preferIm = preferIm,
+                    mrzCandidateOffset = candidateOffset,
                 )
             }
             withContext(Dispatchers.Main) {
@@ -447,8 +468,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Progression de lecture : barre + libellé de l'étape en cours. */
-    private fun showReadStep(step: ReadStep) {
+    private fun showReadStep(step: ReadStep) = renderReadStep(step)
+
+    /**
+     * Rendu de l'étape de lecture. Le handshake PACE (CONNECT) peut durer ~6 s PAR TENTATIVE et
+     * peut être retenté (rotation IM, itération des variantes du numéro) : on affiche alors une
+     * barre INDÉTERMINÉE animée + le n° d'essai — l'utilisateur voit qu'une lecture est en cours
+     * (et laquelle), au lieu d'une barre figée. Les étapes suivantes sont déterministes.
+     */
+    private fun renderReadStep(step: ReadStep) {
+        if (step == ReadStep.CONNECT) {
+            setReadIndeterminate(true)
+            readStep.text = if (readAttempt > 1)
+                getString(R.string.reading_connect_attempt, readAttempt)
+            else getString(R.string.reading_connect)
+            return
+        }
+        setReadIndeterminate(false)
         readProgress.setProgressCompat(step.percent, true)
         readStep.setText(
             when (step) {
@@ -459,6 +495,14 @@ class MainActivity : AppCompatActivity() {
                 ReadStep.VERIFY -> R.string.reading_verify
             },
         )
+    }
+
+    /** Bascule la barre déterminée <-> indéterminée sans exception (cycle de visibilité). */
+    private fun setReadIndeterminate(indeterminate: Boolean) {
+        if (readProgress.isIndeterminate == indeterminate) return
+        readProgress.visibility = View.INVISIBLE
+        readProgress.isIndeterminate = indeterminate
+        readProgress.visibility = View.VISIBLE
     }
 
     /**
@@ -478,7 +522,18 @@ class MainActivity : AppCompatActivity() {
         if (scanned != null) nfcPrompt.visibility = View.VISIBLE
 
         val keyRefused = e is ChipAccessException
-        if (req.key is AccessKey.Mrz) mrzFailures++   // compteur d'échecs MRZ de la carte courante
+        if (req.key is AccessKey.Mrz) {
+            mrzFailures++   // compteur d'échecs MRZ de la carte courante
+            // Itération des variantes du numéro (paires aveugles) :
+            //  - refus net (6300) : tous les candidats depuis l'offset ont été essayés dans le
+            //    tap (la puce refuse proprement) -> variantes épuisées, on passera au CAN.
+            //  - gel en IM : ce candidat est mauvais -> candidat suivant au prochain tap.
+            //  - gel en GM (1er essai) : on ne bouge PAS -> IM réessaiera le MÊME candidat.
+            when {
+                keyRefused -> mrzOffset = mrzCandidateCount
+                lastPreferIm -> mrzOffset++
+            }
+        }
 
         // Classification finale pour le rapport : refus avéré vs aléa transitoire.
         diagCollector?.apply {
@@ -499,8 +554,8 @@ class MainActivity : AppCompatActivity() {
                 // un n° de document peut porter des paires aveugles (G/6, L/1…) qui rendent la
                 // clé PACE-MRZ incertaine et font GELER certaines puces. On le propose DÈS le
                 // premier échec, sans bloquer une nouvelle tentative MRZ : tant que le CAN
-                // n'est pas saisi, buildRequest retente la MRZ (rotation IM) puis, après
-                // MRZ_FAILURES_BEFORE_CAN, attend le CAN pour ne plus boucler sur la puce.
+                // n'est pas saisi, buildRequest retente la MRZ en itérant les variantes du
+                // numéro, puis, une fois épuisées, attend le CAN pour ne plus boucler.
                 canFallback = true
                 canGroup.visibility = View.VISIBLE
                 nfcPromptText.setText(R.string.can_fallback)
@@ -601,8 +656,6 @@ class MainActivity : AppCompatActivity() {
         const val PREF_DIAG_MODE = "diag_mode"
         const val PREF_SALT = "corr_salt"
         const val INCLUDE_EXPIRY_YEAR = true
-        /** Échecs de clé MRZ consécutifs (carte d'identité) avant de proposer le CAN. */
-        const val MRZ_FAILURES_BEFORE_CAN = 2
         const val OCR_ENGINE = "tesseract 5 LSTM + modèle OCR-B/MRZ (bundled)"
         const val LIBS = "JMRTD 0.8.6, scuba-sc-android 0.0.26, Tesseract4Android 4.9.0, BouncyCastle 1.84"
     }
@@ -616,16 +669,16 @@ class MainActivity : AppCompatActivity() {
             if (mrz.docType != MrzOcr.DocType.PASSPORT && canFallback) {
                 // Repli proposé. Si le CAN (recto) est saisi, on l'utilise — clé FIABLE, sans
                 // ambiguïté de glyphe. Sinon on NE bloque pas tout de suite : on retente la clé
-                // MRZ (rotation IM) tant qu'on n'a pas épuisé MRZ_FAILURES_BEFORE_CAN essais,
-                // PUIS on attend le CAN pour ne plus boucler sur une puce qui gèle en PACE-MRZ.
+                // MRZ en itérant les VARIANTES du numéro (une par tap) tant qu'il en reste, PUIS
+                // on attend le CAN pour ne plus boucler sur une puce qui gèle en PACE-MRZ.
                 val can = canInput.text?.toString()?.trim().orEmpty()
                 if (can.length == 6 && can.all { it.isDigit() }) {
                     return AccessRequest(AccessKey.Can(can), mrz)
                 }
-                if (mrzFailures >= MRZ_FAILURES_BEFORE_CAN) {
-                    warn(getString(R.string.enter_can)); return null
+                if (mrzOffset >= mrzCandidateCount) {
+                    warn(getString(R.string.enter_can)); return null   // variantes épuisées
                 }
-                // sinon : nouvelle tentative MRZ (clé ci-dessous), le CAN restant proposé.
+                // sinon : nouvelle tentative MRZ (variante mrzOffset ci-dessous), CAN proposé.
             }
             // Cas nominal, tous documents : clé dérivée de la MRZ (PACE-MRZ, repli BAC).
             // Les CNIe l'acceptent aussi (applet « PACE passwords: MRZ, CAN, PIN, PUK »).
@@ -816,8 +869,7 @@ class MainActivity : AppCompatActivity() {
         statusCard.visibility = View.GONE
         nfcPrompt.visibility = View.GONE
         readingCard.visibility = View.VISIBLE
-        readProgress.setProgressCompat(ReadStep.CONNECT.percent, false)
-        readStep.setText(R.string.reading_connect)
+        renderReadStep(ReadStep.CONNECT)
     }
 
     private fun setStatus(text: String, @DrawableRes icon: Int, @ColorRes tint: Int) {

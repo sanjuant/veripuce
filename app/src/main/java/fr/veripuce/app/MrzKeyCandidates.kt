@@ -30,19 +30,40 @@ object MrzKeyCandidates {
     )
 
     /**
-     * Le numéro tel que lu, puis des variantes par UNE substitution de paire aveugle,
-     * bornées à [limit] essais au total (chaque essai = une session PACE ≈ 1 s). Toutes
-     * les variantes conservent le chiffre de contrôle ICAO (cf. [icaoCheckDigit]) — donc
-     * inutile de re-valider. Ordre déterministe : gauche→droite, l'original en premier.
+     * Le numéro tel que lu, puis ses variantes par substitution de paires aveugles, bornées à
+     * [limit] essais au total (chaque essai = une session PACE ≈ 1 s).
+     *
+     * Une carte peut porter PLUSIEURS positions ambiguës (ex. un numéro avec L, 1 et 6) : le
+     * vrai numéro peut différer du numéro lu sur 1 OU PLUSIEURS positions à la fois. On génère
+     * donc les COMBINAISONS de substitutions par nombre de permutations CROISSANT (0, puis 1,
+     * puis 2… — les écarts faibles sont les plus probables), en largeur d'abord.
+     *
+     * Toutes les variantes conservent le chiffre de contrôle ICAO (chaque paire aveugle a un
+     * écart ≡ 0 mod 10, et une somme de tels écarts l'est aussi) — inutile de re-valider.
+     * Ordre déterministe, l'original en premier.
      */
-    fun documentNumberCandidates(documentNumber: String, limit: Int = 4): List<String> {
+    fun documentNumberCandidates(documentNumber: String, limit: Int = 10): List<String> {
         val out = LinkedHashSet<String>()
         out += documentNumber
-        outer@ for (i in documentNumber.indices) {
-            for (sub in BLIND_SUBSTITUTIONS[documentNumber[i]].orEmpty()) {
-                out += documentNumber.substring(0, i) + sub + documentNumber.substring(i + 1)
-                if (out.size >= limit) break@outer
+        // Parcours en largeur : chaque « vague » applique UNE substitution de plus qu'à la vague
+        // précédente, uniquement sur une position encore à sa valeur d'origine (pour ne pas
+        // permuter deux fois la même case). On génère donc 1 flip, puis 2 flips, etc.
+        var frontier = listOf(documentNumber)
+        while (out.size < limit && frontier.isNotEmpty()) {
+            val next = LinkedHashSet<String>()
+            for (base in frontier) {
+                for (i in documentNumber.indices) {
+                    if (base[i] != documentNumber[i]) continue        // position déjà permutée
+                    for (sub in BLIND_SUBSTITUTIONS[documentNumber[i]].orEmpty()) {
+                        next += base.substring(0, i) + sub + base.substring(i + 1)
+                    }
+                }
             }
+            for (variant in next) {
+                if (out.size >= limit) break
+                out += variant
+            }
+            frontier = next.toList()
         }
         return out.toList()
     }
