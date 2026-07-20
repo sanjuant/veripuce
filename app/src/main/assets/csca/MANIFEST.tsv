@@ -1,5 +1,5 @@
 # Magasin CSCA — généré par tools/csca/update_csca.py
-# Éditions : masterlist ICAO ICAO_ML_20260708111336.ml (https://www.icao.int/sites/default/files/Security/FAL/MasterList/ICAO_ML_20260708111336.ml)
+# Éditions : masterlist ICAO ICAO_ML_20260715120139.ml (https://www.icao.int/sites/default/files/Security/FAL/MasterList/ICAO_ML_20260715120139.ml)
 #            masterlist BSI DE_ML_2026-05-28-08-28-45.ml (https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/ElekAusweise/CSCA/GermanMasterList.zip?__blob=publicationFile)
 #            ANTS : CSCA-FRANCE_2025 (https://img.ants.gouv.fr/78710fab-d613-43a6-9123-e740181f5550.zip), CSCA-FRANCE_2020 (https://img.ants.gouv.fr/9fcbd13c-19a7-406d-ae0f-d4ff68ee247f.zip), CSCA-FRANCE_2015 (https://img.ants.gouv.fr/6c2a08a3-719b-45c9-95b4-bc68b993a89f.zip), CSCA-FRANCE_2010 (https://img.ants.gouv.fr/dc3345f5-3e91-44e7-9f62-47bcfd0e24fc.zip), eID-FRANCE (https://img.ants.gouv.fr/ba66b9a1-bb09-4c0b-ad27-ce39d038a6e6.zip)
 fichier	pays	sujet	valide_du	valide_au	sha256	sources
@@ -526,6 +526,11 @@ NA_CSCA-Namibia_icao-bsi_b1f5a18a.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2021
 NA_CSCA-Namibia_icao-bsi_79cb5f48.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2024-02-16	2041-03-23	79cb5f481e0bb5c0688ec837c2027a8bc825dd484f5a4084c7b7fff93018780c	icao+bsi
 NA_CSCA-Namibia_icao-bsi_a8a21254.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2024-02-16	2044-02-16	a8a21254172d3af3c62a707e1f9b7fb5aea4c716431bc8e8b379845288a08a63	icao+bsi
 NG_CSCA-Nigeria_icao_aac085e8.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA  Nigeria	2024-07-25	2035-01-19	aac085e8a0bece54474eefff3ab05e39248a63c3ce19a1ccd2ede8c9c51a2c59	icao
+NG_CSCA-NIGERIA---v2_icao_828223f5.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA NIGERIA - v2	2026-02-08	2041-02-14	828223f539b1420d4b4ad9c9b79ccbc2d2face5eeb3216e4f6e3f2ddb44c5334	icao
+NG_CSCA_V5_icao_736309d7.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA_V5	2025-12-15	2041-07-10	736309d7e73958fe886a22e99e094ad6acbe57b99ba81fb6b84dd84b50e6bcf8	icao
+NG_Country-Signer_icao_7fd6408e.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2017-05-17	2027-05-18	7fd6408e91c935ef44365cba99eb9541bc6de2b2053eee6f71f0261d25558b8f	icao
+NG_Country-Signer_icao_0ab864d7.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2019-04-01	2034-04-01	0ab864d70603ff212c6e31438dee82b32b04aa2fb89fb42479bb473652c1d95d	icao
+NG_Country-Signer_icao_4d5885dd.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2022-03-22	2037-03-22	4d5885dd6abc27062bdc1ce30bd93d716e74dc79bc1b4ea8909e164b6da186c7	icao
 NG_Nigeria-Country-Signer-0705_icao_d01cdbdb.pem	NG	1.2.840.113549.1.9.1=ffatusin@imagetech.com.ng,CN=Nigeria Country Signer 0705,OU=Federal Government of Nigeria,O=MSC Trustgate.com,L=Abuja,ST=FCT,C=NG	2007-05-06	2017-05-31	d01cdbdb981c7733619348f79a2911c600a9a36fc935f1ad1106fe460b1cd5f8	icao
 NL_CSCA-NL_icao_f6873b13.pem	NL	C=NL,O=State of the Netherlands,OU=Ministry of the Interior and Kingdom Relations,CN=CSCA NL	2006-08-21	2014-08-30	f6873b130219f823ca65f2fedd6f3c3a32144a9fdba4f988d1c8d01bde32e864	icao
 NL_CSCA-NL_icao_130faa68.pem	NL	C=NL,O=State of the Netherlands,OU=Ministry of the Interior and Kingdom Relations,CN=CSCA NL,2.5.4.5=2	2009-08-19	2014-08-30	130faa68f24e9916d117a7b23deb7e84914431216db44e7af1179d06007547b3	icao
@@ -630,6 +635,8 @@ RW_Republic-of-Rwanda-CSCA_icao-bsi_c4992f31.pem	RW	CN=Republic of Rwanda CSCA,O
 RW_Republic-of-Rwanda-CSCA_icao-bsi_02ceb53c.pem	RW	CN=Republic of Rwanda CSCA,OU=Certification Authorities,OU=ePassport,O=Republic of Rwanda,C=RW	2024-05-29	2039-12-29	02ceb53c1d81ef8ef17428f45f30b91c02c722990f1dbc88132c3f6b499ec703	icao+bsi
 RW_Republic-of-Rwanda-CSCA_icao-bsi_5097952f.pem	RW	CN=Republic of Rwanda CSCA,OU=Certification Authorities,OU=ePassport,O=Republic of Rwanda,C=RW	2024-05-29	2039-12-29	5097952ffd46f3b0a248f1df2d6b8f14bb335878e3d247fc2161cead154a9abc	icao+bsi
 SA_CSCA-Saudi-Arabia_icao-bsi_ba4993fe.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2020-11-27	2036-06-27	ba4993fe319d8dd5a745294acd7109227f222a50524daf90760c48047cce9e22	icao+bsi
+SA_CSCA-Saudi-Arabia_icao_d9f894ee.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2025-11-20	2041-06-20	d9f894ee06f39616a983955a1a430fb7bf7a0c1689c3471c6a99c638e9d637a3	icao
+SA_CSCA-Saudi-Arabia_icao_dde9c052.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2025-11-20	2041-06-20	dde9c052d3241c5f8fc34eb61bbc6bac8a572ebd8d1653358f5a86533b6b456d	icao
 SC_CSCA_icao-bsi_a1880e83.pem	SC	CN=CSCA,O=Department of Information Communication and Technology (DICT),C=SC	2022-11-14	2036-02-14	a1880e83d48b7d24a138bab2aef0a3cbe29982ce5517877cfc651b36502122b1	icao+bsi
 SD_Sudan-CSCA_icao_522a7267.pem	SD	2.5.4.5=1,CN=Sudan CSCA,OU=Sudan MOI,O=Sudan Gov,C=SD	2025-08-12	2038-11-09	522a72674b7ffc2a05afe10b5fad2a96b081055424932ba58deaf916cf38a8bf	icao
 SE_Swedish-Country-Signing-CA_icao_ac89e2e5.pem	SE	C=SE,O=Rikspolisstyrelsen,CN=Swedish Country Signing CA	2005-09-26	2021-09-22	ac89e2e5d172557c459ea4099b593f7dd7484d981e9c32b2ea103f38e65ec0dd	icao
