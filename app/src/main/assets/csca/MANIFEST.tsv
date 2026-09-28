@@ -1,6 +1,6 @@
 # Magasin CSCA — généré par tools/csca/update_csca.py
-# Éditions : masterlist ICAO ICAO_ML_20260708111336.ml (https://www.icao.int/sites/default/files/Security/FAL/MasterList/ICAO_ML_20260708111336.ml)
-#            masterlist BSI DE_ML_2026-05-28-08-28-45.ml (https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/ElekAusweise/CSCA/GermanMasterList.zip?__blob=publicationFile)
+# Éditions : masterlist ICAO ICAO_ML_20260924155216.ml (https://www.icao.int/sites/default/files/Security/FAL/MasterList/ICAO_ML_20260924155216.ml)
+#            masterlist BSI DE_ML_2026-08-19-10-28-54.ml (https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/ElekAusweise/CSCA/GermanMasterList.zip?__blob=publicationFile)
 #            ANTS : CSCA-FRANCE_2025 (https://img.ants.gouv.fr/78710fab-d613-43a6-9123-e740181f5550.zip), CSCA-FRANCE_2020 (https://img.ants.gouv.fr/9fcbd13c-19a7-406d-ae0f-d4ff68ee247f.zip), CSCA-FRANCE_2015 (https://img.ants.gouv.fr/6c2a08a3-719b-45c9-95b4-bc68b993a89f.zip), CSCA-FRANCE_2010 (https://img.ants.gouv.fr/dc3345f5-3e91-44e7-9f62-47bcfd0e24fc.zip), eID-FRANCE (https://img.ants.gouv.fr/ba66b9a1-bb09-4c0b-ad27-ce39d038a6e6.zip)
 fichier	pays	sujet	valide_du	valide_au	sha256	sources
 AD_CSCA-AND_bsi_73d1823a.pem	AD	CN=CSCA-AND,OU=MJI,O=GOV,C=AD	2016-11-24	2030-02-22	73d1823ab0ff319001a117b9f924249b2a83fa0defa9fdf0aae3638788f99b77	bsi
@@ -20,13 +20,12 @@ AE_UAE-CSCA-02_icao-bsi_d0e477b5.pem	AE	CN=UAE CSCA 02,OU=EPASS,O=MOI,C=AE	2022-
 AG_csca-antigua_bsi_6974f026.pem	AG	CN=csca-antigua,OU=pcd,O=gov,C=AG	2017-03-29	2032-09-29	6974f02662049ba8e5a11a504f64184318e5cff784fccaa7651ae5511ecdefad	bsi
 AG_csca-antigua_bsi_e75953b4.pem	AG	CN=csca-antigua,OU=pcd,O=gov,C=AG	2022-06-07	2037-12-07	e75953b43ed2abccb09dee192e954d7e6051f147eebe803cf7758fb5ddc26515	bsi
 AL_CSCA-ALB_icao-bsi_290959a0.pem	AL	C=AL,O=GOV,OU=Ministry of Interior,CN=CSCA ALB,2.5.4.5=5	2025-01-29	2040-05-01	290959a04d0269b16ad5270d18ae35e280ad947b61663024fc9c8dd4bfac4304	icao+bsi
-AO_CSCA_Angola_icao_f0822a8b.pem	AO	1.2.840.113549.1.9.1=csca_angola@sme.ao,C=AO,L=Luanda,ST=Angola,OU=SME,O=MININT,CN=CSCA_Angola	2025-10-15	2041-01-15	f0822a8b994f91e42f9300a074d0cdb6fdd13ac1023f00f3273800df1b26a174	icao
+AO_CSCA_Angola_icao-bsi_f0822a8b.pem	AO	1.2.840.113549.1.9.1=csca_angola@sme.ao,C=AO,L=Luanda,ST=Angola,OU=SME,O=MININT,CN=CSCA_Angola	2025-10-15	2041-01-15	f0822a8b994f91e42f9300a074d0cdb6fdd13ac1023f00f3273800df1b26a174	icao+bsi
 AR_capasaporte_bsi_506c8c4d.pem	AR	CN=capasaporte,OU=renaper,OU=mininterior,O=gob,C=AR	2012-02-10	2028-05-24	506c8c4d63ff620a356b2104d01738c18986b898aa95df0e2a04b6c56ea5dc9b	bsi
 AR_capasaporte_icao-bsi_c7c0d37e.pem	AR	CN=capasaporte,OU=renaper,OU=mininterior,O=gob,C=AR	2024-08-26	2039-11-27	c7c0d37e73b92b268f3805edd6457380c9fc7a408bb175adb48d9e36267171bf	icao+bsi
 AT_CSCA-AUSTRIA_icao_467b2982.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2006-06-08	2021-09-12	467b2982264c05b116372bb22eaa7a5b32db8ffa9c705adb8571c3ac06b8126c	icao
-AT_CSCA-AUSTRIA_bsi_1c125bb1.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2011-04-15	2026-07-19	1c125bb160231880f44b5bcada32296a7f9f5aee836c659a19dad5d8aa631715	bsi
-AT_CSCA-AUSTRIA_icao-bsi_c8d2452d.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2011-04-15	2026-07-19	c8d2452d099f6bea26b3d023d7ada9349f8fee43a5b20947a1b43a3cb81e6842	icao+bsi
-AT_CSCA-AUSTRIA_icao-bsi_3c2801f9.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2014-10-02	2026-07-19	3c2801f9fd2c32aebf92d3f3dfc84bd69619b9319fc329ba83a05a3892044873	icao+bsi
+AT_CSCA-AUSTRIA_icao_c8d2452d.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2011-04-15	2026-07-19	c8d2452d099f6bea26b3d023d7ada9349f8fee43a5b20947a1b43a3cb81e6842	icao
+AT_CSCA-AUSTRIA_icao_3c2801f9.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2014-10-02	2026-07-19	3c2801f9fd2c32aebf92d3f3dfc84bd69619b9319fc329ba83a05a3892044873	icao
 AT_CSCA-AUSTRIA_icao-bsi_bb6eff59.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2014-10-02	2030-01-05	bb6eff5957af93fc4dc2448a0db3f58715b8e19d17ed0ff28d71fa1a6da0529e	icao+bsi
 AT_CSCA-AUSTRIA_icao-bsi_20914525.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2019-09-02	2030-01-05	2091452526056ee68f3ed11c819a68475bd6bd7f738fbb81ed8d285afc058f9c	icao+bsi
 AT_CSCA-AUSTRIA_icao-bsi_a14e95eb.pem	AT	CN=CSCA-AUSTRIA,OU=BMI,O=GV,C=AT	2019-09-02	2034-12-06	a14e95ebf0b5aa4e73c3030120d9d3309d1c239b35fbbb5549073f29c30f570f	icao+bsi
@@ -101,8 +100,8 @@ BW_CSCA-BWA_icao-bsi_d083eb1d.pem	BW	CN=CSCA-BWA,OU=MNIGA-DIC,O=GOV,C=BW	2018-11
 BW_CSCA-BWA_icao-bsi_6820e02d.pem	BW	CN=CSCA-BWA,OU=MNIGA-DIC,O=GOV,C=BW	2021-11-11	2035-11-11	6820e02d86b6f4d5130218ac426cc34e53ad9ca493599d81d4230d67627a0da2	icao+bsi
 BW_CSCA-BWA_icao-bsi_80aeec6e.pem	BW	CN=CSCA-BWA,OU=MNIGA-DIC,O=GOV,C=BW	2021-11-11	2032-11-23	80aeec6e0ad5249f0a74689758cea616efe69f98b9622ada7d41f5d751c80340	icao+bsi
 BY_CSCA-Belarus_icao-bsi_eb60c6af.pem	BY	CN=CSCA Belarus,OU=NCES,O=Republic of Belarus,C=BY	2020-11-25	2036-02-20	eb60c6af2783bab4030603ba621c76091b25748756638ad7675c3f33b0b04701	icao+bsi
-BY_CSCA-Belarus_icao_edd3037f.pem	BY	CN=CSCA Belarus,OU=NCES,O=Republic of Belarus,C=BY	2025-11-20	2041-02-14	edd3037f93d141582e983f73ae6210374c42efb20b66a03c597d84b8cc65f066	icao
-BY_CSCA-Belarus_icao_a65ecb8d.pem	BY	CN=CSCA Belarus,OU=NCES,O=Republic of Belarus,C=BY	2025-11-20	2036-02-20	a65ecb8d75e1bdf273b81a97e3f5cdd14a35bc0684ee2df11b6e0750f5db3cbd	icao
+BY_CSCA-Belarus_icao-bsi_edd3037f.pem	BY	CN=CSCA Belarus,OU=NCES,O=Republic of Belarus,C=BY	2025-11-20	2041-02-14	edd3037f93d141582e983f73ae6210374c42efb20b66a03c597d84b8cc65f066	icao+bsi
+BY_CSCA-Belarus_icao-bsi_a65ecb8d.pem	BY	CN=CSCA Belarus,OU=NCES,O=Republic of Belarus,C=BY	2025-11-20	2036-02-20	a65ecb8d75e1bdf273b81a97e3f5cdd14a35bc0684ee2df11b6e0750f5db3cbd	icao+bsi
 BZ_csca-belize_icao-bsi_2ccd44a7.pem	BZ	CN=csca-belize,OU=moi,O=gov,C=BZ	2022-10-12	2038-05-12	2ccd44a7e744e7c82e53dde2140d3805c50ff905e666f1ba25141815f8f97298	icao+bsi
 CA_csca-canada_icao-bsi_7c2aad9d.pem	CA	CN=csca-canada,OU=pptc,O=gc,C=CA	2012-12-05	2028-06-05	7c2aad9dae87eed6935e84bc450aab4fac57cffb5324dbd06dc494569b294863	icao+bsi
 CA_csca-canada_icao-bsi_2b4a778c.pem	CA	CN=csca-canada,OU=pptc,O=gc,C=CA	2017-09-12	2033-03-12	2b4a778c08909a2f13cb736f19fa577d3803735b3312eef883be9db670e799ed	icao+bsi
@@ -111,6 +110,8 @@ CA_csca-canada_icao-bsi_eef7e623.pem	CA	CN=csca-canada,OU=pptc,O=gc,C=CA	2022-08
 CA_csca-canada_icao-bsi_f462638a.pem	CA	CN=csca-canada,OU=pptc,O=gc,C=CA	2022-08-30	2038-02-28	f462638adede314ae0f4cd7689441dd393601a3f51bf271bbdc2bf1815977d71	icao+bsi
 CH_CSCA-CHE_icao-bsi_9d8da0bf.pem	CH	CN=CSCA-CHE,OU=eDoc-PKI,OU=fedpol,O=FDJP,C=CH	2023-10-04	2026-10-06	9d8da0bf89a6385aff3f7d0a546602b10b582c267433d5f1a3b4fa83f4fb7685	icao+bsi
 CH_CSCA-CHE_icao-bsi_a77cdb0e.pem	CH	CN=CSCA-CHE,OU=eDoc-PKI,OU=fedpol,O=FDJP,C=CH	2023-10-04	2037-03-05	a77cdb0e304a0733777f521eb4f4ae36db7e8732626da7307933bc32ba0f8e9e	icao+bsi
+CH_CSCA-CHE_icao_843990bd.pem	CH	CN=CSCA-CHE,OU=eDoc-PKI,OU=fedpol,O=FDJP,C=CH	2026-09-08	2040-02-08	843990bd13ba69083ab0afee994c4f7116d764a5be1d47d70c9da039f99587bc	icao
+CH_CSCA-CHE_icao_ee4b88a6.pem	CH	CN=CSCA-CHE,OU=eDoc-PKI,OU=fedpol,O=FDJP,C=CH	2026-09-08	2029-09-10	ee4b88a686c943f9d1edbad3687afa3e25ddbaa00e0c2cfc4c606d1b87e2ae7f	icao
 CH_csca-switzerland-1_icao_aac542b7.pem	CH	CN=csca-switzerland-1,OU=Certification Authorities,OU=Services,O=Admin,C=CH	2006-06-28	2017-08-31	aac542b78ab6ec16d8de7211a78a563a316542c9e40a9dff9af0d42e4db22f42	icao
 CH_csca-switzerland-2_icao_0d36713a.pem	CH	CN=csca-switzerland-2,OU=Certification Authorities,OU=Services,O=Admin,C=CH	2010-02-16	2024-04-29	0d36713a6520f61996948619334878712f3a169bb52a251b09aa3c2e8ff25e2e	icao
 CH_csca-switzerland-2_icao-bsi_26af31c5.pem	CH	CN=csca-switzerland-2,OU=Certification Authorities,OU=Services,O=Admin,C=CH	2013-02-11	2027-04-25	26af31c54baf3ccca98b9d4f7e54409a331479b8aaed3a3cb25794008e1689e2	icao+bsi
@@ -135,8 +136,8 @@ CL_CSCA_icao-bsi_7585ae32.pem	CL	C=CL,O=Ministerio de Justicia y Derechos Humano
 CL_CSCA_icao-bsi_bd10b0cf.pem	CL	C=CL,O=Ministerio de Justicia y Derechos Humanos,OU=Servicio de Registro Civil e Identificacion,CN=CSCA,2.5.4.5=3	2021-08-01	2037-11-16	bd10b0cf3addd12c895913f52985dddea35d1301638fbac58e9bf2dfb33d34a8	icao+bsi
 CL_CSCA_icao-bsi_26539f4a.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2024-05-28	2039-06-13	26539f4a222aec83e155466d3e2648598ae78ec2a96e45769652c689ac9f76c5	icao+bsi
 CL_CSCA_icao-bsi_69a22617.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2024-05-28	2037-11-16	69a22617cc39b11d7d7e55fcae7fc358d23418a82e48b46e45daf1d02c25fe65	icao+bsi
-CL_CSCA_icao_b5dd7457.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2026-05-05	2051-05-20	b5dd74579cd7db82cb18fa2044f2893b83401d57070e6089bdc6687eae5aa05f	icao
-CL_CSCA_icao_8e82732a.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2026-05-05	2051-05-20	8e82732a4449b7fcab35c0f63f9b11e707a550973adf7a597d46b7ac0c6d68f7	icao
+CL_CSCA_icao-bsi_b5dd7457.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2026-05-05	2051-05-20	b5dd74579cd7db82cb18fa2044f2893b83401d57070e6089bdc6687eae5aa05f	icao+bsi
+CL_CSCA_icao-bsi_8e82732a.pem	CL	CN=CSCA,OU=Servicio de Registro Civil e Identificación,O=Ministerio de Justicia y Derechos Humanos,C=CL	2026-05-05	2051-05-20	8e82732a4449b7fcab35c0f63f9b11e707a550973adf7a597d46b7ac0c6d68f7	icao+bsi
 CM_Cameroon-CSCA_icao-bsi_e2a50548.pem	CM	C=CM,O=Republic of Cameroon,OU=DGSN,2.5.4.5=003,CN=Cameroon CSCA	2024-11-13	2039-11-10	e2a50548e40a5652212c72077506884ea12985c161b8a40d9ea3134ab177fa7a	icao+bsi
 CM_Cameroon-CSCA-Crosslink-001-002_bsi_f32295a9.pem	CM	C=CM,O=Republic of Cameroon,OU=DGSN,CN=Cameroon CSCA Crosslink 001 002	2023-11-30	2029-08-22	f32295a9f69534bba3ffe42a96dfcba00ec80a1091933449216cd245574b9ef9	bsi
 CM_Cameroon-CSCA-Crosslink-002-003_bsi_4bce16a4.pem	CM	C=CM,O=Republic of Cameroon,OU=DGSN,CN=Cameroon CSCA Crosslink 002-003	2024-11-15	2032-02-26	4bce16a4f5087f52f0464bb9f348868483e62c98abef66d277f759b0c582f094	bsi
@@ -182,7 +183,7 @@ CO_Government-of-Colombia-CSCA_icao-bsi_7645da39.pem	CO	CN=Government of Colombi
 CO_Government-of-Colombia-CSCA_icao-bsi_ba775b18.pem	CO	CN=Government of Colombia CSCA,OU=Certification Authorities,O=Colombia,C=CO	2020-06-05	2036-01-05	ba775b184e4c48e1c6947a0431d59fb0a015a005db457750fa96c7e557592d26	icao+bsi
 CO_Government-of-Colombia-CSCA_icao-bsi_02694dfb.pem	CO	CN=Government of Colombia CSCA,OU=Certification Authorities,O=Colombia,C=CO	2025-06-05	2041-01-05	02694dfb9f714eed036f278f88871ef4924d89adac5b2271d55441f7879396e9	icao+bsi
 CO_Government-of-Colombia-CSCA_icao-bsi_7814bd74.pem	CO	CN=Government of Colombia CSCA,OU=Certification Authorities,O=Colombia,C=CO	2025-06-05	2041-01-05	7814bd7434e43523a3c8b2300d4666fed92b04b9f4b3fd81117bbfcc98236bdf	icao+bsi
-CO_Government-of-Colombia-CSCA_icao_482a7438.pem	CO	CN=Government of Colombia CSCA,OU=Certification Authorities,O=Colombia,C=CO	2026-03-18	2039-06-18	482a7438c9938af2579379a6ffc9d13a1288727939cddbe421e9f2ff82ce2ebe	icao
+CO_Government-of-Colombia-CSCA_icao-bsi_482a7438.pem	CO	CN=Government of Colombia CSCA,OU=Certification Authorities,O=Colombia,C=CO	2026-03-18	2039-06-18	482a7438c9938af2579379a6ffc9d13a1288727939cddbe421e9f2ff82ce2ebe	icao+bsi
 CR_Costa-Rica-CSCA_icao-bsi_9946b7e1.pem	CR	CN=Costa Rica CSCA,OU=DGTI,O=Junta Adm. de la Dirección General de Migración y Extranjería,C=CR	2021-09-18	2035-09-18	9946b7e12f1c4039af3a2f6f337f95f2265c402a703cef7bec278dc9c9cc3f53	icao+bsi
 CR_Costa-Rica-CSCA_icao-bsi_411c90b7.pem	CR	CN=Costa Rica CSCA,OU=DGTI,O=Junta Adm. de la Dirección General de Migración y Extranjería,C=CR	2024-08-12	2038-08-12	411c90b77c02d2ce74382fb9b98f44d33ec90243d5b25409a740071256ec01af	icao+bsi
 CR_Costa-Rica-CSCA_icao-bsi_e9111bc6.pem	CR	CN=Costa Rica CSCA,OU=DGTI,O=Junta Adm. de la Dirección General de Migración y Extranjería,C=CR	2024-08-12	2035-09-18	e9111bc6fcb01e12fb92a8e0ee4a17582dcca9a5920116e5f626bef75dbf271f	icao+bsi
@@ -198,10 +199,10 @@ CY_CSCA-CYPRUS_bsi_7fa23c8a.pem	CY	CN=CSCA-CYPRUS,OU=Ministry of Interior,O=Repu
 CY_CSCA-CYPRUS_bsi_8658e561.pem	CY	CN=CSCA-CYPRUS,OU=Ministry of Interior,O=Republic of Cyprus,C=CY	2026-04-18	2039-03-13	8658e561155e37b7af507abc5050b18a0d6864d74b11685b21aac23625668500	bsi
 CZ_CSCA_CZ_icao_8fa847e6.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2006-07-24	2021-10-24	8fa847e65b218b8886885732d28c7abe8a5b0a999c2f2c3aafd93ff839ad1b49	icao
 CZ_CSCA_CZ_icao_8f3d4dc0.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2009-01-13	2024-04-13	8f3d4dc07946ba7c5f5f1b3ed73c118bdd0e957990497883119d86869455b1d9	icao
-CZ_CSCA_CZ_icao-bsi_4a1b7430.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2011-03-25	2026-06-25	4a1b74304e2ed85b209b6b9771d35b4dbc331a8feaf4ab1303a59117e68ddc63	icao+bsi
+CZ_CSCA_CZ_icao_4a1b7430.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2011-03-25	2026-06-25	4a1b74304e2ed85b209b6b9771d35b4dbc331a8feaf4ab1303a59117e68ddc63	icao
 CZ_CSCA_CZ_icao_ba6fc43c.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2011-03-25	2024-04-13	ba6fc43cfe4d234565967618b20795dd635388782c61768738b9fea44ce93e5d	icao
 CZ_CSCA_CZ_icao-bsi_7fd67574.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2016-03-24	2031-06-24	7fd675743a21031475e2713d950ad28bba04fccbb91bd46e97db85bf96066117	icao+bsi
-CZ_CSCA_CZ_icao-bsi_bf9196e7.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2016-03-24	2026-06-25	bf9196e76e59a84fe8bea2780785c5d371d8d4ec9656666d999a57485388ec05	icao+bsi
+CZ_CSCA_CZ_icao_bf9196e7.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2016-03-24	2026-06-25	bf9196e76e59a84fe8bea2780785c5d371d8d4ec9656666d999a57485388ec05	icao
 CZ_CSCA_CZ_icao-bsi_6ab0d8ee.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2021-03-23	2036-06-23	6ab0d8eefa62827679043334dc7fc6a18408c2308a0fc68521217163142c74d1	icao+bsi
 CZ_CSCA_CZ_icao-bsi_85c0ea24.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2021-03-23	2031-06-24	85c0ea24911f7659ac2aa7e68e9f3c2c85fe3dae331279fa38f102ad9be16ced	icao+bsi
 CZ_CSCA_CZ_icao-bsi_15210bd4.pem	CZ	CN=CSCA_CZ,OU=Ministry of Interior,O=Czech Republic,C=CZ	2026-03-19	2036-06-23	15210bd45d9f7657b954081b100f0be1f3dff2b93fb9a6a8f8007476c0da4759	icao+bsi
@@ -248,6 +249,8 @@ ES_CSCA-SPAIN_icao-bsi_bf105c14.pem	ES	CN=CSCA SPAIN,2.5.4.5=3,O=DIRECCION GENER
 ES_CSCA-SPAIN_icao_c618f866.pem	ES	CN=CSCA SPAIN,2.5.4.5=3,O=DIRECCION GENERAL DE LA POLICIA,C=ES	2017-06-07	2022-06-07	c618f866d18d3aae1bda8d58e55a07ec5d436365a76be5cb387bec046558050a	icao
 ES_CSCA-SPAIN_icao-bsi_1a4225b4.pem	ES	CN=CSCA SPAIN,2.5.4.5=4,O=DIRECCION GENERAL DE LA POLICIA,C=ES	2022-05-18	2027-05-18	1a4225b479aa74e545975c1ab2a1762cd8da7b278d9b4135f27d94261f557b60	icao+bsi
 ES_CSCA-SPAIN_icao-bsi_1c2c6ff0.pem	ES	CN=CSCA SPAIN,2.5.4.5=4,O=DIRECCION GENERAL DE LA POLICIA,C=ES	2022-05-18	2037-08-18	1c2c6ff09f78a3bcb2c65b531169cec2eb3200397aa72bf5b2210bc6e0f17209	icao+bsi
+ES_CSCA-SPAIN_icao_4010eca6.pem	ES	CN=CSCA SPAIN,O=DIRECCION GENERAL DE LA POLICIA,C=ES	2025-11-04	2030-11-04	4010eca6488d3a60b9fafb4c9ebca67674e6773e30f66923b9228a3d157f6d31	icao
+ES_CSCA-SPAIN_icao_5394cf7c.pem	ES	CN=CSCA SPAIN,O=DIRECCION GENERAL DE LA POLICIA,C=ES	2025-11-04	2041-01-29	5394cf7c2368f04bb43485776d9c0e947775578bb81e017be048e8f916153e9a	icao
 ET_Ethiopia-CSCA_icao_acb0a177.pem	ET	CN=Ethiopia CSCA,O=INSA,C=ET	2025-02-18	2040-06-14	acb0a1778d4c51bdd1a6d00b56676445380e0442993a23a7f3c1d1683ee0439a	icao
 EU_EU-Laissez-Passer-CSCA_icao-bsi_ba2025b7.pem	EU	C=EU,OU=European Commission,O=European Union,CN=EU Laissez Passer CSCA	2015-11-04	2027-02-04	ba2025b7f2e8c50852c6cd061c3cc10c13c0a4ff4e6215ecff3d0093320d3e18	icao+bsi
 EU_EU-Laissez-Passer-CSCA_icao-bsi_269f2802.pem	EU	C=EU,OU=European Commission,O=European Union,CN=EU Laissez Passer CSCA	2020-07-27	2031-10-27	269f28027f321ae19c603bd8e3c5b8124fcb5074e1eb900dfbe41bf20cee99c2	icao+bsi
@@ -279,6 +282,8 @@ GB_Country-Signing-Authority_icao-bsi_69a2d806.pem	GB	CN=Country Signing Authori
 GB_Country-Signing-Authority_icao-bsi_9e2629fd.pem	GB	CN=Country Signing Authority,O=UKKPA,C=GB	2021-09-17	2038-01-17	9e2629fdfcec86980cdb381234618cdbebd851b5b1a49ac129d9efe92ed8c711	icao+bsi
 GB_Country-Signing-Authority_icao-bsi_f64a144f.pem	GB	CN=Country Signing Authority,O=UKKPA,C=GB	2021-09-17	2038-01-17	f64a144f3f70806636283a208add89ed0a4a010b1811d45a88453f2471d9775a	icao+bsi
 GB_Country-Signing-Authority_bsi_933e3de9.pem	GB	CN=Country Signing Authority,O=UKKPA,C=GB	2024-01-17	2038-01-17	933e3de9a6b2b00c67aeec5a554914e4e632d3a925d7f1050c64878ad4ca6c17	bsi
+GB_Country-Signing-Authority_icao_737ce248.pem	GB	CN=Country Signing Authority,O=UKKPA,C=GB	2026-08-24	2042-12-24	737ce248b62d8b6dc1c9e3aaa8b937334406bac17bb37235c1c50281e6ad7edb	icao
+GB_Country-Signing-Authority_icao_81d9f6bf.pem	GB	CN=Country Signing Authority,O=UKKPA,C=GB	2026-08-24	2038-01-17	81d9f6bf3026a04e6e3847808cf094e34f9473a92ff66eb86a975f4c42055b5d	icao
 GE_GEO-CSCA_icao_3d94ef15.pem	GE	CN=GEO CSCA,OU=Civil Registry Agency,O=Ministry of Justice of Georgia,L=Tbilisi,C=GE	2010-04-14	2023-07-13	3d94ef15fbbc8b6de80f52cbb4ff9f235f36d90963b7829822c92c8195df7d73	icao
 GE_GEO-Country-Signing-CA_icao-bsi_a1b6ba9c.pem	GE	C=GE,O=Ministry of Justice of Georgia,OU=Civil Registry Agency,CN=GEO Country Signing CA	2011-07-07	2026-10-01	a1b6ba9c675286563e489e38a19227457005a0ecb0eb6c738ebaa35008327f1d	icao+bsi
 GE_GEO-Country-Signing-CA_icao-bsi_f9111848.pem	GE	C=GE,O=Ministry of Justice of Georgia,OU=Public Service Development Agency,CN=GEO Country Signing CA	2016-09-22	2031-12-18	f9111848d53782c67a9a61a7cf4b575b6fa4568c7a5b96e7761e93de1bdb37d8	icao+bsi
@@ -298,6 +303,8 @@ GR_CSCAeRP-HELLAS_bsi_f3b696cc.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=001,O=Hellenic R
 GR_CSCAeRP-HELLAS_bsi_68ba2e41.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=001,O=Hellenic Republic,C=GR	2017-01-18	2028-07-15	68ba2e412bdefdc3c77e54636bf64f4ad3cf5ecba7c7f138bb5eae77cf7ca643	bsi
 GR_CSCAeRP-HELLAS_bsi_6beb1628.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=002,O=Hellenic Republic,C=GR	2021-09-22	2036-09-21	6beb1628619b6c3b66aff7b99eabc904f16e0cc18fc7627af168d06c791d7a94	bsi
 GR_CSCAeRP-HELLAS_bsi_171ee0b5.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=002,O=Hellenic Republic,C=GR	2021-10-05	2032-01-10	171ee0b537a0b6b954f79fd812eb056be738d15e323f7a8e5ebdcdbdcb937718	bsi
+GR_CSCAeRP-HELLAS_bsi_8f01ced4.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=003,O=Hellenic Republic,C=GR	2026-05-27	2041-05-26	8f01ced4c95d9ee5cc6915e1151432e18fa1615ad6d8e61bb6ea1af025368e3e	bsi
+GR_CSCAeRP-HELLAS_bsi_5bbdb09b.pem	GR	CN=CSCAeRP-HELLAS,2.5.4.5=003,O=Hellenic Republic,C=GR	2026-05-27	2036-09-20	5bbdb09b12bc25f9373142409d9b52da806b764294baf4f028a2c13da15bdfc5	bsi
 HR_CSCA-Croatia_bsi_60688b43.pem	HR	CN=CSCA-Croatia,O=MUP RH,C=HR	2013-04-29	2028-04-29	60688b43f07a3825f216a7f04fe175127ed7e6e0c4dadc8a17ecd234f9db525e	bsi
 HR_CSCA-Croatia_bsi_3a420182.pem	HR	CN=CSCA-Croatia,O=MUP RH,C=HR	2017-01-24	2028-04-29	3a420182310c6645fd7783f03870e6723f83c4ef1d1d73c542cdeb54114da78a	bsi
 HR_CSCA-Croatia_bsi_c23fefb8.pem	HR	CN=CSCA-Croatia,O=MUP RH,C=HR	2017-01-24	2032-01-24	c23fefb892427ea43576772be1154ae340311423029d53410095574c8e1b3d14	bsi
@@ -334,10 +341,12 @@ HU_ID-CSCA-HUNGARY-02_bsi_7c917a97.pem	HU	CN=ID-CSCA-HUNGARY 02,OU=KEKKH,O=GOV,C
 HU_OIFCA-HUNGARY-1_bsi_42d9c9ad.pem	HU	CN=OIFCA-HUNGARY 1,OU=OIF,O=GOV,C=HU	2020-02-06	2033-05-06	42d9c9ad5d442085ba62d59ce05261c0f6d92887f37acbb98dd0b70ab4edd06f	bsi
 HU_OIFCA-HUNGARY-1_bsi_9b2cb7e5.pem	HU	CN=OIFCA-HUNGARY 1,OU=OIF,O=GOV,C=HU	2020-02-06	2033-05-06	9b2cb7e5011f033975f679f061de2d93a6b5a83987b69d0e04087b4843c54f3c	bsi
 HU_OIFCA-HUNGARY-2_bsi_0ab01f39.pem	HU	CN=OIFCA-HUNGARY 2,OU=OIF,O=GOV,C=HU	2020-06-02	2033-06-02	0ab01f398bfc0d248833d30b4fa36bb2a1ee8bd1352a1c8560d0a49c2f6fa012	bsi
+ID_CSCA-Indonesia_icao_473848c0.pem	ID	CN=CSCA Indonesia,OU=Direktorat Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2025-12-17	2041-07-17	473848c0c1b77e7dabcaca6e3a0c35bf2092f8f6878b3f9c5399903b3cbef9d3	icao
+ID_CSCA-Indonesia_icao_d6ffc24a.pem	ID	CN=CSCA Indonesia,OU=Direktorat Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2026-02-27	2038-01-12	d6ffc24a7e208ea6b79bec335d73eb4a82a8de109b7add6e6f042568a0a61f8b	icao
 ID_CSCAProd_icao_0bc5002e.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2018-12-18	2027-06-14	0bc5002e649afe62f5e7ad4f1fca9ca118add11a00ec7e64c4ffcc651d542c53	icao
 ID_CSCAProd_icao_37ca8948.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2021-12-08	2030-06-04	37ca89483f0d2a3ef84e47b968135c7c5879bcaf47e9bc6399e4c3af8eb439dd	icao
 ID_CSCAProd_icao_46cc9e1e.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2021-12-08	2030-06-04	46cc9e1e68c28e287a0d0f8f5c33ede0f41323e21c3c77e4238e5260acb5089d	icao
-ID_CSCAProd_icao_775cd899.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2022-10-17	2038-01-12	775cd899900f9928647d96cba54d0706fcdee72ad7be27133c2affd9e09dd65f	icao
+ID_CSCAProd_icao-bsi_775cd899.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2022-10-17	2038-01-12	775cd899900f9928647d96cba54d0706fcdee72ad7be27133c2affd9e09dd65f	icao+bsi
 ID_CSCAProd_icao_db7eb5ba.pem	ID	CN=CSCAProd,OU=Direktorat Sistem dan Teknologi Informasi Keimigrasian,O=Direktorat Jenderal Imigrasi,C=ID	2022-10-17	2038-01-12	db7eb5ba0bbdb4b98f5884300f1f61a01c62cd68463ab1017ef02399daa1e105	icao
 IE_CSCA-Ireland_icao_44a39901.pem	IE	CN=CSCA Ireland,OU=Passport Office,O=Department of Foreign Affairs,C=IE	2011-01-06	2026-01-06	44a3990154875eaf8253fda60b8d7bf2b5989ae0ee76ddff0ec057760a7950bc	icao
 IE_CSCA-Ireland_icao-bsi_761aa0b6.pem	IE	CN=CSCA Ireland,OU=Passport Office,O=Department of Foreign Affairs,C=IE	2015-12-17	2030-12-17	761aa0b6209445c5554020a5ad2a011d4fc33326a305e183cb1635794cd555ca	icao+bsi
@@ -355,8 +364,8 @@ IL_EPPCSCA_bsi_0c7e858d.pem	IL	OU=PIBA,O=State of Israel,C=IL,CN=EPPCSCA	2023-07
 IN_CSCA-India_icao-bsi_1d40ff3b.pem	IN	CN=CSCA-India,OU=PSP Division,OU=Ministry of External Affairs,O=Government of India,ST=Delhi,C=IN	2023-07-26	2039-02-26	1d40ff3bf25caccc9c11bb71bae2202e42fc0f5f1536ae2774f878a50b9cc8d6	icao+bsi
 IN_NIC-sub-CA-for-ePassport-India-2011_icao_a7e2d639.pem	IN	CN=NIC sub-CA for ePassport-India 2011,OU=Sub-CA,O=National Informatics Centre,C=IN	2011-08-08	2021-08-07	a7e2d63956c67b8f11d246ca05e3fdeeea6987aa0b75097b616dd913e61d98b8	icao
 IQ_Iraqi-Ministry-of-Interior-CSCA_icao-bsi_702dcc87.pem	IQ	O=Iraqi Ministry of Interior,OU=General Directorate of Civil Status\, Passports\, and Residency,CN=Iraqi Ministry of Interior CSCA,C=IQ	2023-01-11	2034-06-11	702dcc87ee22e45816cd87caa5c8af31d097ed46d7e253046cb61d7c116dc5d7	icao+bsi
-IQ_Iraqi-Ministry-of-Interior-CSCA_icao_ec45d82f.pem	IQ	O=Iraqi Ministry of Interior,OU=General Directorate of Civil Status\, Passports\, and Residency,CN=Iraqi Ministry of Interior CSCA,C=IQ	2025-12-29	2037-05-29	ec45d82f5ac1cd230b84a66d08d3cb6d49251c431837a2f9881fbf8bda07f0f4	icao
-IQ_Iraqi-Ministry-of-Interior-CSCA_icao_f2de4a2e.pem	IQ	O=Iraqi Ministry of Interior,OU=General Directorate of Civil Status\, Passports\, and Residency,CN=Iraqi Ministry of Interior CSCA,C=IQ	2025-12-29	2028-12-31	f2de4a2e39a9e20cb104c47a783336dcae3e8b576d2468b5d8c5357531da4f65	icao
+IQ_Iraqi-Ministry-of-Interior-CSCA_icao-bsi_ec45d82f.pem	IQ	O=Iraqi Ministry of Interior,OU=General Directorate of Civil Status\, Passports\, and Residency,CN=Iraqi Ministry of Interior CSCA,C=IQ	2025-12-29	2037-05-29	ec45d82f5ac1cd230b84a66d08d3cb6d49251c431837a2f9881fbf8bda07f0f4	icao+bsi
+IQ_Iraqi-Ministry-of-Interior-CSCA_icao-bsi_f2de4a2e.pem	IQ	O=Iraqi Ministry of Interior,OU=General Directorate of Civil Status\, Passports\, and Residency,CN=Iraqi Ministry of Interior CSCA,C=IQ	2025-12-29	2028-12-31	f2de4a2e39a9e20cb104c47a783336dcae3e8b576d2468b5d8c5357531da4f65	icao+bsi
 IR_CSCA-Islamic-Republic-of-IRAN_icao_024187ba.pem	IR	C=IR,O=Ministry of Interior,OU=Police CA Center,CN=CSCA-Islamic Republic of IRAN	2010-09-21	2018-10-22	024187ba550faabe433b041ce7b7ab3c0c2aa8827c2d8be1f8fb11aef7d44373	icao
 IR_CSCA-Islamic-Republic-of-IRAN_icao_b6b26a3b.pem	IR	CN=CSCA-Islamic Republic of IRAN,2.5.4.5=02,OU=Police CA Center,O=Ministry of Interior,C=IR	2017-08-15	2029-11-16	b6b26a3b1b33b58caaf929159f995128f84eac3b46be95543d213e03d4695de1	icao
 IR_CSCA-Islamic-Republic-of-IRAN_icao_aad4df07.pem	IR	CN=CSCA-Islamic Republic of IRAN,2.5.4.5=02,OU=Police CA Center,O=Ministry of Interior,C=IR	2018-09-01	2018-10-22	aad4df07663560a7f1025eae705b92dab2a2c3136c37299f4f8b3fad770b4691	icao
@@ -393,9 +402,13 @@ KE_Kenya-Country-Signing-CA_icao-bsi_c922dd6d.pem	KE	C=KE,O=ICTA,OU=KenyaGovernm
 KE_Kenya-Country-Signing-CA_icao-bsi_9f783db0.pem	KE	C=KE,O=ICTA,OU=KenyaGovernmentCertificationAuthority,CN=Kenya Country Signing CA	2019-08-23	2034-11-24	9f783db082c2d5721084fe9f8c2ec38ab785fd36f71ab8f715e059e42fb93f33	icao+bsi
 KE_Kenya-Country-Signing-CA_icao-bsi_ed2f5f01.pem	KE	C=KE,O=ICTA,OU=KenyaGovernmentCertificationAuthority,CN=Kenya Country Signing CA	2021-08-24	2036-11-25	ed2f5f018d25c63aa153fc3dfd0962fc24f930e172c1085f76f1dec34e2e6468	icao+bsi
 KE_Kenya-Country-Signing-CA_icao-bsi_dd5bd7ea.pem	KE	C=KE,O=ICTA,OU=KenyaGovernmentCertificationAuthority,CN=Kenya Country Signing CA	2023-08-25	2038-11-26	dd5bd7ead7bb90bbced5d4ab64a564eb3f2f1ba9686c3402eb1c8613ac89c88a	icao+bsi
-KN_CSCA1_icao_550212e7.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2019-01-25	2034-08-25	550212e71c06e51ac7d6f3967b32ba1fc322dc9f8357832dcd0228e8d1541234	icao
-KN_CSCA1_icao_9b57ab8a.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2024-01-18	2039-08-18	9b57ab8abb1dcaffc3f671ed71aa1adfe266db239d482e7402d9a4fbafaaefc1	icao
-KN_CSCA1_icao_a854b2f0.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2024-01-18	2039-08-18	a854b2f0cba3eabe27ee32c40f229638e53abaaafe1327a44347fce7c8ff7347	icao
+KN_CSCA1_icao-bsi_c778cf7a.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2014-08-21	2030-08-21	c778cf7a6e5ba745d4c6be259f3434ce223b29d3da8644225ebad3669cdb96a5	icao+bsi
+KN_CSCA1_icao-bsi_ecad6dc7.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2014-08-21	2030-08-21	ecad6dc7a37b2555bf126444f8ed35dce220f60a1b843ad71668f171def0ad85	icao+bsi
+KN_CSCA1_bsi_4ce002fa.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2019-01-25	2034-08-25	4ce002fab6434a9f3049b400bc0656545f95970cd09667c7accf302148462624	bsi
+KN_CSCA1_icao-bsi_550212e7.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2019-01-25	2034-08-25	550212e71c06e51ac7d6f3967b32ba1fc322dc9f8357832dcd0228e8d1541234	icao+bsi
+KN_CSCA1_bsi_56ca235d.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2019-01-25	2034-08-25	56ca235d1ce0b26cf80609d819b9932e17d003957ecc690ce5b2f7cbba0cfe4b	bsi
+KN_CSCA1_icao-bsi_9b57ab8a.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2024-01-18	2039-08-18	9b57ab8abb1dcaffc3f671ed71aa1adfe266db239d482e7402d9a4fbafaaefc1	icao+bsi
+KN_CSCA1_icao-bsi_a854b2f0.pem	KN	CN=CSCA1,OU=Passport Office,O=Government of St. Christopher (St. Kitts) and Nevis,C=KN	2024-01-18	2039-08-18	a854b2f0cba3eabe27ee32c40f229638e53abaaafe1327a44347fce7c8ff7347	icao+bsi
 KR_CSCA_icao_5a843415.pem	KR	CN=CSCA,OU=MOFAT,O=Government,C=KR	2008-03-07	2023-06-07	5a8434152b7c2baf59970069967cf70a98db2aa4bc857a75b6357de73a9c1976	icao
 KR_CSCA_icao-bsi_8ed8f1ea.pem	KR	CN=CSCA,OU=MOFA,O=Government,C=KR	2013-05-31	2028-08-31	8ed8f1eae09ebec3c5c22a6ca59367cae456dedf1de16807719f80852f61570c	icao+bsi
 KR_CSCA-KOREA_icao-bsi_3d1136e4.pem	KR	CN=CSCA-KOREA,OU=MOFA,O=Government,C=KR	2020-03-19	2035-06-19	3d1136e4f1ee20bb9a20b98efdbbacb52c27419b31bbec97fb74b372d90bb469	icao+bsi
@@ -470,6 +483,8 @@ MA_CSCA-MAROC_icao-bsi_43e503d3.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2021-01-27	2029-
 MA_CSCA-MAROC_icao-bsi_5dce3f15.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2021-01-27	2029-03-27	5dce3f155b04bcedb3d274fd8f81db7993df546a81dd2444707c0e963e03e257	icao+bsi
 MA_CSCA-MAROC_icao-bsi_732795c5.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2023-11-14	2032-01-14	732795c5b236631c0f6d7a939965d3913f0ff219c01a438b412b439e60299054	icao+bsi
 MA_CSCA-MAROC_icao-bsi_ec18a493.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2023-11-14	2032-01-14	ec18a49345ff017aba5ace1312c208fd79785b167a56290e917e2d10619a7988	icao+bsi
+MA_CSCA-MAROC_icao_4091f6a0.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2026-06-30	2041-09-30	4091f6a01ab108fbb120d7c115d9459e5b9515dc2260ad5070760c3485f2fddd	icao
+MA_CSCA-MAROC_icao_4b2a7a6f.pem	MA	CN=CSCA-MAROC,O=Gov,C=MA	2026-06-30	2041-09-30	4b2a7a6fdd7086a4b31211b8f6fd247eaef2da06d4c66ba9157413690f7cd04e	icao
 MC_CSCAPKI_MC_bsi_1cf488fd.pem	MC	CN=CSCAPKI_MC,OU=Foreign Office of Monaco,O=Principality of Monaco,C=MC	2015-06-11	2028-09-08	1cf488fdb4f990e513202b65af11babded56ee7d00e59e810c2c059b37ee8572	bsi
 MC_CSCAPKI_MC_bsi_1ffd9e64.pem	MC	CN=CSCAPKI_MC,OU=Foreign Office of Monaco,O=Principality of Monaco,C=MC	2018-05-30	2031-08-28	1ffd9e64931c790a314476f304cd3a7e9d8db3f7c7a728d8dc9ea785784e2de5	bsi
 MC_CSCAPKI_MC_bsi_198527f8.pem	MC	CN=CSCAPKI_MC,OU=Foreign Office of Monaco,O=Principality of Monaco,C=MC	2021-01-13	2034-04-13	198527f85495d31cfda191c609b2273f8954c5b5d0fec45e9a6ad70baa272d91	bsi
@@ -490,6 +505,7 @@ ME_csca-montenegro-2_bsi_720e46c0.pem	ME	CN=csca-montenegro-2,OU=Ministry of Int
 ME_csca-montenegro-2_bsi_2908afde.pem	ME	CN=csca-montenegro-2,OU=Ministry of Interior,O=Montenegro,C=ME	2017-11-28	2033-02-28	2908afde721803e988053f04acd732178fda1723e7ad51e6b55f434340397c23	bsi
 ME_csca-montenegro-2_bsi_6b19865f.pem	ME	CN=csca-montenegro-2,OU=Ministry of Interior,O=Montenegro,C=ME	2017-11-28	2028-03-28	6b19865f4bd7297c6d5223bf953833e94011270d206611a51fb078a685bb5b8b	bsi
 ME_csca-montenegro-2_bsi_b622a801.pem	ME	C=ME,O=Montenegro,OU=Ministry of Interior,CN=csca-montenegro-2	2020-01-17	2035-04-16	b622a8016bd81408ed23eca0a7a861d7ec4975f9f41b757310dbdecb4198df64	bsi
+ME_csca-montenegro-2_bsi_c2541966.pem	ME	CN=csca-montenegro-2,OU=Ministry of Interior,O=Montenegro,C=ME	2020-01-17	2028-02-27	c254196630d2b4f7e0756015ae2ac621fb7292e94556fc68e53ac12438536189	bsi
 ME_csca-montenegro-2_bsi_5fbb11b2.pem	ME	C=ME,O=Montenegro,OU=Ministry of Interior,CN=csca-montenegro-2	2025-01-07	2035-04-16	5fbb11b294fd97f69fd15ee6a8c80881faf0475c9ce660b042f9bf355c9fafab	bsi
 ME_csca-montenegro-2_bsi_6f21dfa4.pem	ME	C=ME,O=Montenegro,OU=Ministry of Interior,CN=csca-montenegro-2	2025-01-07	2040-04-06	6f21dfa481e8dee710c1e66fe1b910d5686a4040d1827456f4197fdfa4b4ef74	bsi
 MK_CSCA-MKD_bsi_ee760788.pem	MK	C=MK,O=GOV,OU=MOI,CN=CSCA MKD	2020-12-23	2032-06-14	ee76078835bec1615fbd83b918617ea6a62ef746a166ba3fbb3a2fb89e613b4b	bsi
@@ -508,8 +524,8 @@ MT_Malta-Country-Signing-CA_bsi_e81491e1.pem	MT	CN=Malta Country Signing CA,O=Go
 MT_Malta-Country-Signing-CA_bsi_47d5990e.pem	MT	CN=Malta Country Signing CA,O=Government of Malta,C=MT	2025-02-18	2038-06-15	47d5990efa76453f1164609d1afb6ceef2455e941d1c3db72ec2f5abdcebb5b8	bsi
 MT_Malta-Country-Signing-CA_bsi_9cbdca10.pem	MT	CN=Malta Country Signing CA,O=Government of Malta,C=MT	2025-02-18	2035-08-08	9cbdca10c5383e42e0125d09c420f08673fd9f9cf0d947d98d4f888e34b55e26	bsi
 MX_CSCA-MEXICO_icao-bsi_1c0d0724.pem	MX	CN=CSCA MEXICO,O=SECRETARIA DE RELACIONES EXTERIORES,C=MX	2021-07-14	2037-02-14	1c0d0724a8d64feb9c3a25e2fab94038a01dcead2f7c391adddbf22723353ae6	icao+bsi
-MX_CSCA-MEXICO_icao_29922443.pem	MX	CN=CSCA MEXICO,O=SECRETARIA DE RELACIONES EXTERIORES,C=MX	2026-05-27	2037-02-14	29922443a98a300d09b0a7c0b50d78918872416205c6118026467257f6f12652	icao
-MX_CSCA-MEXICO_icao_b8b9a270.pem	MX	CN=CSCA MEXICO,O=SECRETARIA DE RELACIONES EXTERIORES,C=MX	2026-05-27	2041-12-27	b8b9a27060213483ee733c39dcc6a7ae346913e1857828b311cf9e09f139d094	icao
+MX_CSCA-MEXICO_icao-bsi_29922443.pem	MX	CN=CSCA MEXICO,O=SECRETARIA DE RELACIONES EXTERIORES,C=MX	2026-05-27	2037-02-14	29922443a98a300d09b0a7c0b50d78918872416205c6118026467257f6f12652	icao+bsi
+MX_CSCA-MEXICO_icao-bsi_b8b9a270.pem	MX	CN=CSCA MEXICO,O=SECRETARIA DE RELACIONES EXTERIORES,C=MX	2026-05-27	2041-12-27	b8b9a27060213483ee733c39dcc6a7ae346913e1857828b311cf9e09f139d094	icao+bsi
 MY_Malaysia-Country-Signer_icao_b38faaea.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,L=Putrajaya,ST=WP,O=Jabatan Imigresen Malaysia,C=MY	2012-01-31	2022-01-31	b38faaead30e29ed00a606433f2efa8abef7b8e2bd5711ad90191c3f80a98108	icao
 MY_Malaysia-Country-Signer_icao_a50ab583.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,L=Putrajaya,ST=WP,O=Jabatan Imigresen Malaysia,C=MY	2014-10-14	2024-10-14	a50ab58352a2fbaca218756617a836afae4c091ba9c564acea057f4738ca5f94	icao
 MY_Malaysia-Country-Signer_icao_b45509e1.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,L=Putrajaya,ST=WP,O=Jabatan Imigresen Malaysia,C=MY	2014-10-14	2022-01-31	b45509e1dfb6ff4800a1ce0724bd1be54d0629be499bf7cab55cc754fd9851fb	icao
@@ -519,13 +535,21 @@ MY_Malaysia-Country-Signer_icao-bsi_4d2cf4eb.pem	MY	CN=Malaysia Country Signer,O
 MY_Malaysia-Country-Signer_icao-bsi_d81d3048.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,O=Jabatan Imigresen Malaysia,L=Putrajaya,ST=WP,C=MY	2022-12-15	2029-07-23	d81d3048b7f745053d8d5ae899bbf838acad166d36aa228ef94637a360cb8fb0	icao+bsi
 MY_Malaysia-Country-Signer_icao-bsi_72e93d7e.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,O=Jabatan Imigresen Malaysia,L=Putrajaya,ST=WP,C=MY	2025-12-19	2032-12-12	72e93d7ef4967f5da9f875c3fad112b87c12a248d2fe9ea5813a8f84baf0c455	icao+bsi
 MY_Malaysia-Country-Signer_icao-bsi_490e4582.pem	MY	CN=Malaysia Country Signer,OU=Bahagian Keselamatan dan Pasport,O=Jabatan Imigresen Malaysia,L=Putrajaya,ST=WP,C=MY	2025-12-28	2040-12-24	490e45823464e8d9f8365ae8feb85ebb8dfb479d2410e32e6537197714392eb1	icao+bsi
-MZ_CSCA_icao_96403e66.pem	MZ	2.5.4.5=105,CN=CSCA,OU=SENAMI,O=MINT MOZ,C=MZ	2025-03-12	2038-06-09	96403e66b13d47a42d20e766b03e02048570d75402fa86115ad1a01885178756	icao
+MZ_CSCA_icao-bsi_96403e66.pem	MZ	2.5.4.5=105,CN=CSCA,OU=SENAMI,O=MINT MOZ,C=MZ	2025-03-12	2038-06-09	96403e66b13d47a42d20e766b03e02048570d75402fa86115ad1a01885178756	icao+bsi
 NA_CSCA-Namibia_icao-bsi_9205342b.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2017-12-13	2037-12-13	9205342b27742e9d1c9ab4a85aae142515847e845c201a105d8fc42b920f8232	icao+bsi
 NA_CSCA-Namibia_icao-bsi_7628d340.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2021-03-23	2037-12-13	7628d340e14175f2005668553a15c036862012dd64b1b30383ab5fb9d5fe4e9b	icao+bsi
 NA_CSCA-Namibia_icao-bsi_b1f5a18a.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2021-03-23	2041-03-23	b1f5a18a37e9548a9a4baff5d98ca84ca77a70f630d633ded0518b6bd3aba383	icao+bsi
 NA_CSCA-Namibia_icao-bsi_79cb5f48.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2024-02-16	2041-03-23	79cb5f481e0bb5c0688ec837c2027a8bc825dd484f5a4084c7b7fff93018780c	icao+bsi
 NA_CSCA-Namibia_icao-bsi_a8a21254.pem	NA	CN=CSCA-Namibia,C=NA,O=GOV,OU=MHAI	2024-02-16	2044-02-16	a8a21254172d3af3c62a707e1f9b7fb5aea4c716431bc8e8b379845288a08a63	icao+bsi
+NA_CSCA-Namibia_icao_2ea28c9e.pem	NA	CN=CSCA-Namibia,OU=MHAISS,O=GOV,C=NA	2026-08-21	2044-02-16	2ea28c9e6bfd23a4a42ea79d1e16888f0e7a464d8f0ccd7e4d01f0c3fe07b942	icao
+NA_CSCA-Namibia_icao_fba02138.pem	NA	CN=CSCA-Namibia,OU=MHAISS,O=GOV,C=NA	2026-08-21	2041-08-21	fba021382054ae1da644123c208b44f8170fbb4ab83e9419dfc20d4919e91772	icao
 NG_CSCA-Nigeria_icao_aac085e8.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA  Nigeria	2024-07-25	2035-01-19	aac085e8a0bece54474eefff3ab05e39248a63c3ce19a1ccd2ede8c9c51a2c59	icao
+NG_CSCA-NIGERIA_icao_8e8df48d.pem	NG	CN=CSCA NIGERIA,OU=NIS,O=NIS,C=NG	2026-09-11	2041-09-11	8e8df48d7df29819b7c92e8741e206e69a059a64079c3022d94f872d375d5ae8	icao
+NG_CSCA-NIGERIA---v2_icao_828223f5.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA NIGERIA - v2	2026-02-08	2041-02-14	828223f539b1420d4b4ad9c9b79ccbc2d2face5eeb3216e4f6e3f2ddb44c5334	icao
+NG_CSCA_V5_icao_736309d7.pem	NG	C=NG,O=NIS,OU=NIS,CN=CSCA_V5	2025-12-15	2041-07-10	736309d7e73958fe886a22e99e094ad6acbe57b99ba81fb6b84dd84b50e6bcf8	icao
+NG_Country-Signer_icao_7fd6408e.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2017-05-17	2027-05-18	7fd6408e91c935ef44365cba99eb9541bc6de2b2053eee6f71f0261d25558b8f	icao
+NG_Country-Signer_icao_0ab864d7.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2019-04-01	2034-04-01	0ab864d70603ff212c6e31438dee82b32b04aa2fb89fb42479bb473652c1d95d	icao
+NG_Country-Signer_icao_4d5885dd.pem	NG	CN=Country Signer,OU=Ministry of Interior,O=Nigeria Immigration Service,L=Abuja,ST=Abuja,C=NG	2022-03-22	2037-03-22	4d5885dd6abc27062bdc1ce30bd93d716e74dc79bc1b4ea8909e164b6da186c7	icao
 NG_Nigeria-Country-Signer-0705_icao_d01cdbdb.pem	NG	1.2.840.113549.1.9.1=ffatusin@imagetech.com.ng,CN=Nigeria Country Signer 0705,OU=Federal Government of Nigeria,O=MSC Trustgate.com,L=Abuja,ST=FCT,C=NG	2007-05-06	2017-05-31	d01cdbdb981c7733619348f79a2911c600a9a36fc935f1ad1106fe460b1cd5f8	icao
 NL_CSCA-NL_icao_f6873b13.pem	NL	C=NL,O=State of the Netherlands,OU=Ministry of the Interior and Kingdom Relations,CN=CSCA NL	2006-08-21	2014-08-30	f6873b130219f823ca65f2fedd6f3c3a32144a9fdba4f988d1c8d01bde32e864	icao
 NL_CSCA-NL_icao_130faa68.pem	NL	C=NL,O=State of the Netherlands,OU=Ministry of the Interior and Kingdom Relations,CN=CSCA NL,2.5.4.5=2	2009-08-19	2014-08-30	130faa68f24e9916d117a7b23deb7e84914431216db44e7af1179d06007547b3	icao
@@ -606,11 +630,12 @@ PT_ECN-Documentos-de-Viagem-006_bsi_c26ef7f5.pem	PT	C=PT,O=Republica Portuguesa 
 PT_ECN-Documentos-de-Viagem-007_bsi_532fccd7.pem	PT	C=PT,O=Republica Portuguesa - Portuguese Republic,OU=ICAO MRTD PKI - CSCA,CN=ECN Documentos de Viagem 007	2022-06-03	2030-08-30	532fccd79acba619e68350a9012f415304236bf16e5e4e0c8d5f1540eda04fee	bsi
 PT_ECN-Documentos-de-Viagem-008_bsi_91fd3292.pem	PT	C=PT,O=Republica Portuguesa - Portuguese Republic,OU=ICAO MRTD PKI - CSCA,CN=ECN Documentos de Viagem 008	2023-10-24	2037-01-18	91fd3292537532f025ef59eb855251288feeba7082b821e6f9217829bd855d85	bsi
 PT_ENC-006-007_bsi_a1a0ded4.pem	PT	CN=ENC 006 007,OU=ICAO MRTD PKI - CSCA Crosslink,O=Republica Portuguesa - Portuguese Republic,C=PT	2022-06-03	2027-11-04	a1a0ded4f87ca3ee2eb60382cc6ed854968f8bcee09a6b61ac853a43c1c92634	bsi
+PY_CSCA_icao_43842500.pem	PY	C=PY,O=Ministry of Foreign Affairs,OU=ePassport,CN=CSCA	2021-11-12	2031-11-13	43842500f1b1e484dde0b2932834867f6c360be313a0a76c4fcd4a2a8da54431	icao
 QA_CSCA-QATAR_icao_0e20f5f4.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2008-02-07	2016-04-06	0e20f5f462d9a538b6fef8b1038c2e321f9e4185be988282aa89c31eb6c541fc	icao
 QA_CSCA-QATAR_icao_3cd6461d.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2010-12-22	2019-02-22	3cd6461d03f7b0ac881751367d29e2834ff78445a053378e5e0e5cbe82a2cead	icao
 QA_CSCA-QATAR_icao_d65594ed.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2014-02-06	2022-04-06	d65594ed4ff1599c36df3756b83ace1f1347fa2749506c9862d86fd41a7e121f	icao
 QA_CSCA-QATAR_icao_5f005083.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2017-02-22	2025-04-22	5f005083f81410f366c6d52bb4a7e108372068dc70d8af148014860291c77f69	icao
-QA_CSCA-QATAR_icao-bsi_f68d0d05.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2018-06-05	2026-08-05	f68d0d0539ca268cbaf7db76a56f40d437bbb9c5739e018083c3971e75559d36	icao+bsi
+QA_CSCA-QATAR_icao_f68d0d05.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2018-06-05	2026-08-05	f68d0d0539ca268cbaf7db76a56f40d437bbb9c5739e018083c3971e75559d36	icao
 QA_CSCA-QATAR_bsi_15083a4c.pem	QA	CN=CSCA-QATAR,O=Gov,C=QA	2021-08-11	2029-10-11	15083a4c34933853cc1da1ba5859f7ddaf946f33346b883dd4e751a4b7073785	bsi
 RO_CSCA-Romania_icao-bsi_2f08f6ba.pem	RO	CN=CSCA Romania,O=DGP,C=RO	2019-12-06	2035-07-06	2f08f6bac10853d67a1b2181710f91ab6268840380458ced9cb076492cf24427	icao+bsi
 RO_CSCA-Romania_icao-bsi_dd4f0b61.pem	RO	CN=CSCA Romania,O=DGP,C=RO	2019-12-06	2035-07-06	dd4f0b61cc2be908805c6db9d04818e19829288b4fc664484cd8792d9989eb51	icao+bsi
@@ -626,10 +651,14 @@ RU_CSCA-Russia_icao-bsi_796bfca7.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN
 RU_CSCA-Russia_icao-bsi_b116591e.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN=CSCA-Russia,OU=UZIS,O=FSUE STC Atlas,L=Moscow,ST=Russia,C=RU	2014-11-19	2036-11-13	b116591eb411e081b384f4ec20887fa43ae5f82ef2c890f31983723163b1d4f9	icao+bsi
 RU_CSCA-Russia_icao-bsi_87de4a7c.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN=CSCA-Russia,OU=UZIS,O=FSUE STC Atlas,L=Moscow,ST=Russia,C=RU	2019-10-11	2035-10-07	87de4a7c606519ed87982c471b39a3487dd8d7184903a3dafb40bbcf67777edf	icao+bsi
 RU_CSCA-Russia_icao-bsi_85e02d7f.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN=CSCA-Russia,OU=UZIS,O=FSUE STC Atlas,L=Moscow,ST=Russia,C=RU	2019-10-11	2035-10-07	85e02d7faa4ed86fe40eee902c9eb49915d9acfd173673c2c627c0eea215d17c	icao+bsi
+RU_CSCA-Russia_bsi_2e5f4e96.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN=CSCA-Russia,OU=UZIS,O=FSUE STC Atlas,L=Moscow,ST=Russia,C=RU	2024-11-18	2040-11-14	2e5f4e964e199c0904e12dacc09f80f0ff51955f942cba9f85ddcdb3dd7e383e	bsi
+RU_CSCA-Russia_bsi_24b7041c.pem	RU	1.2.840.113549.1.9.1=camail@stcnet.ru,CN=CSCA-Russia,OU=UZIS,O=FSUE STC Atlas,L=Moscow,ST=Russia,C=RU	2024-11-18	2040-11-14	24b7041ce8c9d42bfc44740552d97a61e45aa882252dfa1ba5979f17ff76bb64	bsi
 RW_Republic-of-Rwanda-CSCA_icao-bsi_c4992f31.pem	RW	CN=Republic of Rwanda CSCA,OU=Certification Authorities,OU=ePassport,O=Republic of Rwanda,C=RW	2019-06-12	2035-01-12	c4992f31c0ffd67eef8c561187be5ac001aa271be8d5d3ecbeea0657939043a1	icao+bsi
 RW_Republic-of-Rwanda-CSCA_icao-bsi_02ceb53c.pem	RW	CN=Republic of Rwanda CSCA,OU=Certification Authorities,OU=ePassport,O=Republic of Rwanda,C=RW	2024-05-29	2039-12-29	02ceb53c1d81ef8ef17428f45f30b91c02c722990f1dbc88132c3f6b499ec703	icao+bsi
 RW_Republic-of-Rwanda-CSCA_icao-bsi_5097952f.pem	RW	CN=Republic of Rwanda CSCA,OU=Certification Authorities,OU=ePassport,O=Republic of Rwanda,C=RW	2024-05-29	2039-12-29	5097952ffd46f3b0a248f1df2d6b8f14bb335878e3d247fc2161cead154a9abc	icao+bsi
 SA_CSCA-Saudi-Arabia_icao-bsi_ba4993fe.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2020-11-27	2036-06-27	ba4993fe319d8dd5a745294acd7109227f222a50524daf90760c48047cce9e22	icao+bsi
+SA_CSCA-Saudi-Arabia_icao-bsi_d9f894ee.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2025-11-20	2041-06-20	d9f894ee06f39616a983955a1a430fb7bf7a0c1689c3471c6a99c638e9d637a3	icao+bsi
+SA_CSCA-Saudi-Arabia_icao-bsi_dde9c052.pem	SA	CN=CSCA Saudi Arabia,O=National Information Center,C=SA	2025-11-20	2041-06-20	dde9c052d3241c5f8fc34eb61bbc6bac8a572ebd8d1653358f5a86533b6b456d	icao+bsi
 SC_CSCA_icao-bsi_a1880e83.pem	SC	CN=CSCA,O=Department of Information Communication and Technology (DICT),C=SC	2022-11-14	2036-02-14	a1880e83d48b7d24a138bab2aef0a3cbe29982ce5517877cfc651b36502122b1	icao+bsi
 SD_Sudan-CSCA_icao_522a7267.pem	SD	2.5.4.5=1,CN=Sudan CSCA,OU=Sudan MOI,O=Sudan Gov,C=SD	2025-08-12	2038-11-09	522a72674b7ffc2a05afe10b5fad2a96b081055424932ba58deaf916cf38a8bf	icao
 SE_Swedish-Country-Signing-CA_icao_ac89e2e5.pem	SE	C=SE,O=Rikspolisstyrelsen,CN=Swedish Country Signing CA	2005-09-26	2021-09-22	ac89e2e5d172557c459ea4099b593f7dd7484d981e9c32b2ea103f38e65ec0dd	icao
@@ -644,7 +673,7 @@ SE_Swedish-Country-Signing-CA-v2_icao-bsi_353bd386.pem	SE	C=SE,O=Polismyndighete
 SE_Swedish-Country-Signing-CA-v2_icao-bsi_2723cb60.pem	SE	C=SE,O=Polismyndigheten,CN=Swedish Country Signing CA v2	2024-11-05	2035-09-11	2723cb60604d535daf7eb08df600f7b189972a4e49597a28ae7e8bbde1413dcd	icao+bsi
 SG_C-SG_icao_6205abfd.pem	SG	OU=Singapore Trial Passport CA,O=Ministry of Home Affairs,C=SG	2005-11-18	2020-11-18	6205abfd383dec926e53be1dae196f8f18c5adf5544ddcfc2d30792465abc45c	icao
 SG_C-SG_icao_101c13b6.pem	SG	OU=Singapore Passport CA,O=Ministry of Home Affairs,C=SG	2006-04-06	2021-04-06	101c13b6f1e37cd077c8f167aaa7c27aa4f48c90a1f891ea1fe6e0369844781d	icao
-SG_C-SG_icao-bsi_e1b1c3f2.pem	SG	OU=Singapore Passport CA2,O=Ministry of Home Affairs,C=SG	2011-02-15	2026-08-15	e1b1c3f2a2e710c401fe1f46265ef6f7c941059f7604c589dd898f4f2a91c73a	icao+bsi
+SG_C-SG_icao_e1b1c3f2.pem	SG	OU=Singapore Passport CA2,O=Ministry of Home Affairs,C=SG	2011-02-15	2026-08-15	e1b1c3f2a2e710c401fe1f46265ef6f7c941059f7604c589dd898f4f2a91c73a	icao
 SG_C-SG_icao_2d35c584.pem	SG	OU=Singapore Passport CA2,O=Ministry of Home Affairs,C=SG	2011-02-15	2016-02-13	2d35c584051fb57387cc31a70dacb769b0f70fa184ed0084dae1fcdd8ad8334c	icao
 SG_Singapore-Passport-CA_icao-bsi_6d4009c2.pem	SG	CN=Singapore Passport CA,OU=ICA,O=Ministry of Home Affairs,C=SG	2016-01-26	2031-01-26	6d4009c2541b7c45e132645b45b12a1ee4a4ab5dd81cf2d3312f709df6dbe177	icao+bsi
 SG_Singapore-Passport-CA_icao_d3d4ee01.pem	SG	CN=Singapore Passport CA,OU=ICA,O=Ministry of Home Affairs,C=SG	2016-01-26	2019-01-26	d3d4ee01c2a3ab479a631aa9a84582a51e81d354bf8aeef08da1187b75d7b93a	icao
@@ -666,7 +695,7 @@ SK_The-Slovak-CSCA_icao_6b453d79.pem	SK	CN=The Slovak CSCA,OU=Department of CAs 
 SM_SMR-CSCA_icao-bsi_066224f5.pem	SM	CN=SMR CSCA,OU=COUNTRY SIGNER CA,O=SMR,C=SM	2021-06-29	2036-12-30	066224f5c7e32d0fe3b7eb8d73b3e0883c4345d787bd71419a8fd9529d85acaa	icao+bsi
 SM_SMR-CSCA_icao_6c0f4020.pem	SM	CN=SMR CSCA,OU=COUNTRY SIGNER CA,O=SMR,C=SM	2026-06-29	2041-12-30	6c0f402014ed4d55c20d4076ce654229502e16fa9cb31bb4840475fa18f131e8	icao
 SM_SMR-CSCA_icao_b88c9d70.pem	SM	CN=SMR CSCA,OU=COUNTRY SIGNER CA,O=SMR,C=SM	2026-06-29	2036-12-30	b88c9d70ed0fddb7874260f556d636c8dc71f1357dc4c8496e9911fb98100772	icao
-TG_csca-togo_icao_8eb8926c.pem	TG	CN=csca-togo,OU=DGDN,O=Government of Togo,C=TG	2025-09-18	2041-04-18	8eb8926cbecb4d45a4d88180f30dac7176cc83d7ddc333dd9718b3b212ab2659	icao
+TG_csca-togo_icao-bsi_8eb8926c.pem	TG	CN=csca-togo,OU=DGDN,O=Government of Togo,C=TG	2025-09-18	2041-04-18	8eb8926cbecb4d45a4d88180f30dac7176cc83d7ddc333dd9718b3b212ab2659	icao+bsi
 TH_Country-Signing-CA_icao_45f5aecc.pem	TH	CN=Country Signing CA,O=Ministry of Foreign Affairs,OU=Department of Consular Affairs,C=TH	2005-05-25	2013-07-25	45f5aecc539758b6d86c4bdeda258de46881e13b27b09e5339397d62658ca860	icao
 TH_Country-Signing-CA_icao_12815929.pem	TH	CN=Country Signing CA,O=Ministry of Foreign Affairs,OU=Department of Consular Affairs,C=TH	2008-05-16	2016-07-16	1281592902e2dfd4c753678969f5020424f8dadbd9964c17b0fb5281a4290072	icao
 TH_Country-Signing-CA_icao_4b5a18f5.pem	TH	CN=Country Signing CA,O=Country Signing CA,OU=Country Signing CA,C=TH	2011-05-12	2019-08-12	4b5a18f5fb0a708474fb44ea0438f752decb6641238a6e5bfdfbfe2a968ed550	icao
@@ -678,6 +707,7 @@ TH_Thailand-CSCA_icao-bsi_286bc03c.pem	TH	CN=Thailand CSCA,OU=Department of Cons
 TH_Thailand-CSCA_icao-bsi_e9809154.pem	TH	CN=Thailand CSCA,OU=Department of Consular Affairs,O=Ministry Of Foreign Affairs,C=TH	2024-08-02	2039-08-02	e9809154cffe603371311e8bb98a1cb92df8e0c7b2d3708ae84e80914b4e1127	icao+bsi
 TJ_CSCA-Tajikistan_bsi_bfa3c196.pem	TJ	C=TJ,O=Republic of Tajikistan,OU=Ministry of Foreign Affairs,CN=CSCA Tajikistan	2015-01-30	2030-04-30	bfa3c196d9f9354edc35c61fa26edc293972823d2b2f77aecb9b2a3eae657335	bsi
 TJ_CSCA-Tajikistan_bsi_15ba4cda.pem	TJ	2.5.4.5=3,CN=CSCA Tajikistan,OU=Ministry of Foreign Affairs,O=Republic of Tajikistan,C=TJ	2018-12-07	2034-03-06	15ba4cda8df1e87732e6d1e352e111a20897ff053e28b3304c2c3fe7e7436783	bsi
+TJ_CSCA-Tajikistan_bsi_18ba5c7e.pem	TJ	2.5.4.5=4,CN=CSCA Tajikistan,OU=Ministry of Foreign Affairs,O=Republic of Tajikistan,C=TJ	2022-03-02	2037-05-30	18ba5c7ecccd15c34d5210c36a9f46043f3741503f10b8a229adac07a4e566b3	bsi
 TL_CSCAePassportTimorLeste_bsi_c55eb2c7.pem	TL	CN=CSCAePassportTimorLeste,2.5.4.5=001,O=REPÚBLICA DEMOCRÁTICA DE TIMOR-LESTE,C=TL	2017-03-17	2032-06-17	c55eb2c7aa25097b513dec3a52e9d6a0df7e68fe8a1a5b85987f75f1f8c589e7	bsi
 TM_CSCA-Turkmenistan_icao-bsi_33332395.pem	TM	CN=CSCA-Turkmenistan,C=TM,O=GOV,OU=SMST	2008-06-17	2028-06-17	333323951104ebd5b9a615ac754344576ff0f1db8cfbbd3302cd2e1c94f31b71	icao+bsi
 TM_CSCA-Turkmenistan_icao-bsi_ad7ca661.pem	TM	CN=CSCA-Turkmenistan,O=GOV,OU=SMST,C=TM	2018-02-13	2028-02-13	ad7ca6619bf2d4f62e2263c5818c21afdbe09fa01dbdb096997311d4b3021b85	icao+bsi
@@ -686,8 +716,8 @@ TM_CSCA-Turkmenistan_icao-bsi_88168c57.pem	TM	CN=CSCA-Turkmenistan,O=GOV,OU=SMST
 TM_CSCA-Turkmenistan_icao-bsi_49abcd69.pem	TM	CN=CSCA-Turkmenistan,O=GOV,OU=SMST,C=TM	2024-02-04	2044-02-04	49abcd69d82b6474e3e0d8b338beda7a892f6b077c84262d5a52c668697608e0	icao+bsi
 TM_CSCA-Turkmenistan_icao-bsi_64dc4f24.pem	TM	CN=CSCA-Turkmenistan,O=GOV,OU=SMST,C=TM	2024-02-04	2031-05-04	64dc4f24e35945a5094f381a372719729e8699356f118993476d5c9c250f16cf	icao+bsi
 TR_CSCA-Turkey_icao_d303698a.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2010-05-20	2023-07-20	d303698a299d9db57c25c70926ed3159ffb9d91503dbbaae5165fc9b56e93e1f	icao
-TR_CSCA-Turkey_icao-bsi_1e9036ba.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2013-05-28	2026-07-28	1e9036ba9b76ed00ab358e014f0bf7ac34446170c8c8d4e79e153ef7ba8692a4	icao+bsi
-TR_CSCA-Turkey_icao-bsi_acd6890a.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2013-05-28	2026-07-28	acd6890aa45e23f60f5bc316fc0580f4eb91faa75d968119a5634a19b67008c4	icao+bsi
+TR_CSCA-Turkey_icao_1e9036ba.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2013-05-28	2026-07-28	1e9036ba9b76ed00ab358e014f0bf7ac34446170c8c8d4e79e153ef7ba8692a4	icao
+TR_CSCA-Turkey_icao_acd6890a.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2013-05-28	2026-07-28	acd6890aa45e23f60f5bc316fc0580f4eb91faa75d968119a5634a19b67008c4	icao
 TR_CSCA-Turkey_icao-bsi_8dce5694.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2016-05-31	2029-07-31	8dce5694d0b6234ba3689974c37b25ca8ec4a721fec06d8b9a42d05662b8fd1c	icao+bsi
 TR_CSCA-Turkey_icao-bsi_f7c067b6.pem	TR	C=TR,O=Turkey Gov,CN=CSCA Turkey	2016-05-31	2029-07-31	f7c067b63ffdba3be5951460e2eb1f96a4ef38f2bd77e75438391cdb100b365e	icao+bsi
 TR_Passport-CSCA-Turkey_icao-bsi_36d09a0b.pem	TR	CN=Passport CSCA Turkey,OU=General Directorate of Civil Registration and Nationality,O=Republic of Turkey Ministry of Interior,C=TR	2018-03-09	2031-06-09	36d09a0b7d6ff5f9f3f79bc8c6c6a0cdfa380688e475af0bfb7347a0bce59a1f	icao+bsi
@@ -744,6 +774,8 @@ UZ_CSCA-UZBEKISTAN_icao-bsi_89a8c7cf.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ
 UZ_CSCA-UZBEKISTAN_icao-bsi_99c45774.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ	2020-03-04	2032-08-03	99c45774468084102e0d267806d0674c3a0bbdd55f06fdf7885e5742068a0af0	icao+bsi
 UZ_CSCA-UZBEKISTAN_icao-bsi_1af7e52c.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ	2023-02-20	2037-02-16	1af7e52ca0f24542fe758e92c46e57362fc5aacebdfbef671a481fbc021e4210	icao+bsi
 UZ_CSCA-UZBEKISTAN_icao-bsi_c3bf1183.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ	2023-02-20	2033-06-04	c3bf1183e616735753046de1f628f5881567351a5c12eb8a9bbcf50f5fb76c55	icao+bsi
+UZ_CSCA-UZBEKISTAN_icao-bsi_3f2841f3.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ	2026-01-27	2037-02-16	3f2841f3961574381b8f37699c6f6f97a81bbb17d15717ddb0709d722e7f045a	icao+bsi
+UZ_CSCA-UZBEKISTAN_icao-bsi_8acfea81.pem	UZ	CN=CSCA-UZBEKISTAN,OU=GCP,O=GOV,C=UZ	2026-01-27	2040-01-24	8acfea812119728b5d058e900b5493a749f42bb0c40d5dbc9f1bf186554a833b	icao+bsi
 VA_CERTIFICATION-AUTHORITY_bsi_ea1ad38f.pem	VA	C=VA,O=HSVATICAN,CN=CERTIFICATION AUTHORITY,OU=SEGSTAT	2008-02-21	2028-02-16	ea1ad38f77cee9a495bcd76e2f30fbf92e5e4b2bfe51ada10946614a7db45bce	bsi
 VA_CERTIFICATION-AUTHORITY_bsi_c706c59d.pem	VA	C=VA,O=HSVATICAN,OU=SEGSTAT,CN=CERTIFICATION AUTHORITY	2018-03-01	2033-05-26	c706c59d9cef6013d3f68b0708ea146f44f664d49fb633c27145ce29bf051187	bsi
 VA_CERTIFICATION-AUTHORITY_bsi_d2d6d65e.pem	VA	C=VA,O=HSVATICAN,OU=SEGSTAT,CN=CERTIFICATION AUTHORITY	2018-03-01	2033-05-26	d2d6d65e10b1517ddd416878423a8516414b43bf22d830fe9a59037bff9cced5	bsi
@@ -766,7 +798,7 @@ al_CSCA-ALB_icao-bsi_3fa95e7a.pem	al	C=al,O=gov,OU=Ministry of Internal Affairs,
 ar_capasaporte_icao_eacdabb5.pem	ar	CN=capasaporte,OU=renaper,OU=mininterior,O=gob,C=ar	2012-02-10	2027-02-10	eacdabb53b6086085fe077c4620e54dd50a8ec5d018b060c0e25134540012f65	icao
 ca_csca-canada_icao_52c01c6f.pem	ca	CN=csca-canada,OU=pptc,O=gc,C=ca	2008-12-12	2019-04-12	52c01c6fa1b5edd0cdcaac361cff004df7e17f242a6beda6b99faf245fcc0c5b	icao
 gb_Country-Signing-Authority_icao_cc358567.pem	gb	CN=Country Signing Authority,O=UKKPA,C=gb	2005-06-21	2021-10-21	cc358567022af04577f448872ec85208bbcb984b97d2b0c6676d62162c5790b1	icao
-gb_Country-Signing-Authority_icao-bsi_39eb6ed6.pem	gb	CN=Country Signing Authority,O=UKKPA,C=gb	2010-03-24	2026-07-24	39eb6ed6349377c520178f608b947144d22887d3e8b6cb848e114872720c992e	icao+bsi
+gb_Country-Signing-Authority_icao_39eb6ed6.pem	gb	CN=Country Signing Authority,O=UKKPA,C=gb	2010-03-24	2026-07-24	39eb6ed6349377c520178f608b947144d22887d3e8b6cb848e114872720c992e	icao
 gb_Domestic-Use-Only-Country-Signing-Author_bsi_79672da9.pem	gb	CN=Domestic Use Only Country Signing Authority,O=UKKPA,C=gb	2013-03-11	2028-06-11	79672da9d6e1929bda52607817c78e44920499d3e25c9bc25489c496f08be5ea	bsi
 ro_CSCA-Romania_icao_e21f57a4.pem	ro	CN=CSCA Romania,O=DGP,C=ro	2008-12-27	2023-12-27	e21f57a4568db9a793adebd8c315809a6ccbf5be9e8384e4c630b035e70f1593	icao
 ro_CSCA-Romania_icao_56234336.pem	ro	CN=CSCA Romania,O=DGP,C=ro	2011-11-28	2023-12-27	56234336ced67914af8812258cd63c32b29c0a01c18d08df53e856bcd58a8437	icao
