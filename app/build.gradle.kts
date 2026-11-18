@@ -140,4 +140,7 @@ dependencies {
     // Tests JVM (MrzOcr est du Kotlin pur, sans dépendance Android)
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.21")
+    // Tests de propriétés (générateurs + réduction des contre-exemples) sur le parsing MRZ / TLV.
+    // Utilisé seul (sans le runner Kotest) depuis des tests JUnit 4, graine fixe : déterministe.
+    testImplementation("io.kotest:kotest-property:5.9.1")
 }
