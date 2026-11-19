@@ -101,11 +101,19 @@ acceptée que si **tous** sont valides (`checkOk`, `MrzOcr.kt:159-160`).
   contrôle), re-normalise les confusions OCR classiques `O,Q→0 · I→1 · Z→2 · S→5 · B→8`.
 - **`plausibleDate`** (`MrzOcr.kt:136-141`) : format AAMMJJ avec mois `01–12`, jour `01–31` —
   exigé **en plus** des chiffres de contrôle.
+- **`td1Line1Before`** (`MrzOcr.kt:146`) : écarte le « faux passeport » niché dans une carte.
+  Quand les données optionnelles de la ligne 1 d'une TD1 se terminent par « 9 caractères + clé
+  valide + 3 lettres », ce bout collé à la ligne 2 ressemble à une séquence TD3 complète : la
+  carte serait lue comme un passeport, avec un mauvais numéro (mauvaise clé MRZ, pas de repli
+  CAN pour une CNIe). Une séquence TD3 valide **cède donc la place** à une ligne 1 TD1 dont la
+  clé tombe 3 caractères avant elle (±1 pour le bruit OCR). Cette clé doit être un **vrai
+  chiffre** : une ligne 1 de passeport n'en contient aucun, ce qui évite qu'un nom finissant
+  par « …IQ » passe pour une carte. Le diagnostic (`diagnose`) applique la même priorité.
 
 ### Type de document
 
 Le code document (2 premiers caractères de la ligne 1 en TD1) n'a **aucun** chiffre de
-contrôle. Règle de classification robuste aux confusions OCR (`MrzOcr.kt:109-113`) :
+contrôle. Règle de classification robuste aux confusions OCR (`td1Type`, `MrzOcr.kt:124`) :
 
 ```
 code[0] ≠ 'I'   →  titre de séjour   (A?, C?)
