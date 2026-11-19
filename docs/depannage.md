@@ -62,6 +62,7 @@ coherence_scan_puce: KO — doc pos 0 : scan='A' puce='B' ; ...           ← pr
 | `resultat=TagLost` | La puce a **décroché** en plein échange (perte de contact / gel). Pas un refus de clé. |
 | `resultat=SW=0x6300` | Le handshake est allé **au bout** mais le **mot de passe est faux** (donc n° ou dates mal lus). |
 | `resultat=OK` | Cette tentative a **réussi**. |
+| `etape=` | Étape PACE exacte donnée par JMRTD : `MSE:Set AT` (choix du mot de passe/protocole), `GA1-nonce`, `GA2-mapping`, `GA3-accord`, `GA4-auth` (jeton d'authentification). `GA` seul = étape déduite du SW, faute de mieux. |
 | `duree=15,0s` | Le **timeout complet** → gel (la puce ne répondait plus). |
 | `oid=…2.4` vs `…4.4` | Protocole utilisé : `2.4` = **GM**, `4.4` = **IM**. |
 | `coherence_scan_puce` | Compare le n° **scanné** au n° **réel de la puce** — la preuve directe d'une erreur OCR. |
@@ -82,7 +83,11 @@ La lecture par la MRZ échoue. On lit le rapport :
 │     → Si IM réussit ailleurs (ex. CAN en IM = OK), la carte se lit en IM.
 │     → Action : rien à coder — vérifier que la rotation IM est active (v0.2.1+).
 │
-├─ SW=0x6300 (refus de clé, rapide)
+├─ etape=MSE:Set AT, SW=0x6A80 / 0x6A88 / 0x6985 (refus immédiat, toutes les tentatives MRZ)
+│     → la puce n'accepte PAS le mot de passe MRZ sur ce protocole (pas une erreur d'OCR).
+│     → Si le CAN passe sur le même oid : la carte n'ouvre l'eMRTD qu'au CAN.
+│
+├─ SW=0x6300 (refus de clé, rapide ; etape=GA4-auth quand JMRTD la donne)
 │     → le NUMÉRO/les dates dérivés sont FAUX → problème d'OCR.
 │     → Regarder coherence_scan_puce (après une lecture CAN) :
 │         • 1-2 positions fausses, en "paire aveugle" → les CANDIDATS PACE

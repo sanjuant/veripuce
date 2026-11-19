@@ -1,6 +1,7 @@
 package fr.veripuce.app
 
 import net.sf.scuba.smartcards.CardServiceException
+import org.jmrtd.CardServiceProtocolException
 import java.security.MessageDigest
 
 /**
@@ -181,13 +182,27 @@ object DebugReports {
         return -1
     }
 
-    /** Étape PACE probable, déduite du SW (jamais du message brut d'exception). */
+    /**
+     * Étape PACE en échec. JMRTD numérote l'étape dans [CardServiceProtocolException.getStep]
+     * (0 = MSE:Set AT / dérivation de K_pi, 1 = GA nonce, 2 = GA mapping, 3 = GA accord de clé,
+     * 4 = GA authentification mutuelle) : c'est la source exacte, prise en priorité. Elle sépare
+     * « mot de passe MRZ non accepté par la puce » (MSE:Set AT) de « clé fausse » (GA4 + 6300).
+     * À défaut, étape probable déduite du SW (jamais du message brut d'exception).
+     */
     fun stepOf(e: Throwable): String = when {
+        protocolStep(e) != null -> PACE_STEPS.getOrElse(protocolStep(e)!!) { "PACE" }
         PaceError.isTagLost(e) -> "GA"
         swOf(e).let { it == 0x6300 || (it and 0xFFF0) == 0x63C0 } -> "GA"
         swOf(e).let { it == 0x6A80 || it == 0x6A88 || it == 0x6A86 } -> "MSE:Set AT"
         else -> "PACE"
     }
+
+    private val PACE_STEPS = listOf("MSE:Set AT", "GA1-nonce", "GA2-mapping", "GA3-accord", "GA4-auth")
+
+    /** Étape JMRTD (0..4) de la première [CardServiceProtocolException] de la chaîne, sinon null. */
+    fun protocolStep(e: Throwable?): Int? =
+        generateSequence(e) { it.cause }.filterIsInstance<CardServiceProtocolException>()
+            .firstOrNull()?.step?.takeIf { it >= 0 }
 
     /** Résultat d'une tentative : SW, TagLost, ou classe d'exception — jamais le message. */
     fun resultOf(e: Throwable): String {
