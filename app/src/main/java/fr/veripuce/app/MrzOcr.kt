@@ -80,6 +80,13 @@ object MrzOcr {
             if (checkOk(doc, m.groupValues[2]) && checkOk(dob, m.groupValues[5]) && checkOk(exp, m.groupValues[8]) &&
                 plausibleDate(dob) && plausibleDate(exp)
             ) {
+                // Faux passeport niché dans une carte : la fin des données optionnelles de la
+                // ligne 1 TD1 (« n° + clé + 3 car. »), collée à la ligne 2, forme une séquence
+                // TD3 complète. Si une ligne 1 de carte à clé valide se termine juste avant,
+                // c'est la carte : son n° et son type, les dates (communes) de la séquence.
+                td1Line1Before(joined, i, requireCheck = true)?.let { c ->
+                    return MrzData(c.groupValues[3].trimEnd('<'), dob, exp, td1Type(c.groupValues[1]), c.groupValues[2].trimEnd('<'))
+                }
                 return MrzData(doc.trimEnd('<'), dob, exp, DocType.PASSPORT, m.groupValues[3].trimEnd('<'))
             }
         }
@@ -89,7 +96,7 @@ object MrzOcr {
         // position 5 ; fenêtre large pour le bruit OCR). L'état émetteur est sur la ligne 1.
         for (i in joined.indices) {
             val m1 = TD1_DOC.matchAt(joined, i) ?: continue
-            val docCode = m1.groupValues[1].replace("<", "")
+            val docCode = m1.groupValues[1]
             val state = m1.groupValues[2].trimEnd('<')
             val doc = m1.groupValues[3]
             if (!checkOk(doc, m1.groupValues[4])) continue
@@ -101,19 +108,48 @@ object MrzOcr {
                 if (checkOk(dob, m2.groupValues[2]) && checkOk(exp, m2.groupValues[5]) &&
                     plausibleDate(dob) && plausibleDate(exp)
                 ) {
-                    // Le code document n'est protégé par AUCUN chiffre de contrôle : une
-                    // confusion OCR y survit (« ID » lu « IO », « IB », « IQ »…). En France
-                    // (spécimens PRADO) : CNIe = « ID », titre de séjour = « IR » — on ne
-                    // classe donc en titre de séjour que les codes nets « IR » / « A? » /
-                    // « C? » ; tout autre « I? » est traité comme carte d'identité.
-                    val type = when {
-                        docCode.getOrNull(0) != 'I' -> DocType.RESIDENCE_PERMIT   // A?, C?
-                        docCode.getOrNull(1) == 'R' -> DocType.RESIDENCE_PERMIT   // IR net
-                        else -> DocType.ID_CARD                                    // ID + confusions
-                    }
-                    return MrzData(doc.trimEnd('<'), dob, exp, type, state)
+                    return MrzData(doc.trimEnd('<'), dob, exp, td1Type(docCode), state)
                 }
             }
+        }
+        return null
+    }
+
+    /**
+     * Le code document n'est protégé par AUCUN chiffre de contrôle : une confusion OCR y
+     * survit (« ID » lu « IO », « IB », « IQ »…). En France (spécimens PRADO) : CNIe = « ID »,
+     * titre de séjour = « IR » — on ne classe donc en titre de séjour que les codes nets
+     * « IR » / « A? » / « C? » ; tout autre « I? » est traité comme carte d'identité.
+     */
+    private fun td1Type(rawDocCode: String): DocType {
+        val docCode = rawDocCode.replace("<", "")
+        return when {
+            docCode.getOrNull(0) != 'I' -> DocType.RESIDENCE_PERMIT   // A?, C?
+            docCode.getOrNull(1) == 'R' -> DocType.RESIDENCE_PERMIT   // IR net
+            else -> DocType.ID_CARD                                    // ID + confusions
+        }
+    }
+
+    /**
+     * Ligne 1 de carte TD1 (code, état, n°, clé) dont la clé tombe juste avant la séquence
+     * TD3 qui commence en [td3Start] — signe que cette « séquence TD3 » n'est que la fin des
+     * données optionnelles de la carte collée à sa ligne 2.
+     *
+     * Sur une TD1 intacte, la clé du n° (position 14 de la ligne 1) est 3 caractères avant le
+     * faux n° TD3 (positions 17-25). On tolère ±1 caractère perdu/ajouté par l'OCR, pas plus.
+     * Sur un passeport, cette position tombe en fin de ligne 1 (noms ou remplissage `<`), qui
+     * ne contient AUCUN chiffre : on exige donc une clé lue comme un vrai chiffre (pas une
+     * lettre corrigée par fixDigits), sans quoi un nom finissant par « …IQ » ou « …OS » peut
+     * passer pour une ligne de carte (≈ 1/700 sur des noms aléatoires). On n'exige PAS un
+     * début de ligne : l'OCR perd souvent les sauts de ligne.
+     */
+    private fun td1Line1Before(joined: String, td3Start: Int, requireCheck: Boolean): MatchResult? {
+        for (ckPos in (td3Start - 4)..(td3Start - 2)) {
+            val start = ckPos - 14   // TD1_DOC fait 15 caractères, clé comprise
+            if (start < 0) continue
+            val m = TD1_DOC.matchAt(joined, start) ?: continue
+            if (m.groupValues[4][0] !in '0'..'9') continue
+            if (!requireCheck || checkOk(m.groupValues[3], m.groupValues[4])) return m
         }
         return null
     }
@@ -147,6 +183,8 @@ object MrzOcr {
         // Une séquence TD3 (passeport) est-elle repérée, et quel champ cloche ?
         for (i in joined.indices) {
             val m = TD3_SEQ.matchAt(joined, i) ?: continue
+            // Même priorité que findMrz : une ligne de carte juste avant -> diagnostic TD1.
+            if (td1Line1Before(joined, i, requireCheck = false) != null) break
             val doc = checkOk(m.groupValues[1], m.groupValues[2])
             val dob = checkOk(fixDigits(m.groupValues[4]), m.groupValues[5])
             val exp = checkOk(fixDigits(m.groupValues[7]), m.groupValues[8])

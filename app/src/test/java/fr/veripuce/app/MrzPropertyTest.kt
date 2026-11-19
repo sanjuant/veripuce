@@ -91,15 +91,30 @@ class MrzPropertyTest {
         return line
     }
 
-    private fun td3(s: Specimen): String {
-        val line1 = "P<${s.state.padEnd(3, '<')}SPECIMEN<<TEST".padEnd(44, '<')
+    private fun td3(s: Specimen, names: String = "SPECIMEN<<TEST"): String {
+        val line1 = "P<${s.state.padEnd(3, '<')}$names".padEnd(44, '<')
         return line1 + "\n" + td3Line2(s)
     }
 
+    /** Zone des noms d'une ligne 1 TD3 : lettres et '<', jusqu'à 39 caractères (fictifs). */
+    private val arbNames = arbText(letters + listOf('<', '<'), 0..39)
+
+    /** Données optionnelles de ligne 1 TD1 : 0 à 15 caractères [A-Z0-9<] (fictifs). */
+    private val arbTd1Optional = arbText(alnum + listOf('<', '<', '<'), 0..15)
+
+    /**
+     * Données optionnelles qui IMITENT un passeport : « ?? + n°(9) + clé valide + 3 [A-Z<] ».
+     * Collées à la ligne 2 de la carte, elles forment une séquence TD3 complète.
+     */
+    private val arbTd3LikeOptional: Arb<String> =
+        Arb.bind(arbText(alnum + '<', 2..2), arbText(alnum, 9..9), arbText(letters + '<', 3..3)) { pre, doc, nat ->
+            pre + doc + ck(doc) + nat
+        }
+
     /** TD1 (carte / titre de séjour) : 3 lignes de 30 caractères. */
-    private fun td1(s: Specimen, docCode: String): String {
+    private fun td1(s: Specimen, docCode: String, optional: String = ""): String {
         val doc = s.docNumber.padEnd(9, '<')
-        val line1 = (docCode + s.state.padEnd(3, '<') + doc + ck(doc)).padEnd(30, '<')
+        val line1 = (docCode + s.state.padEnd(3, '<') + doc + ck(doc) + optional).padEnd(30, '<')
         val upper = s.dob + ck(s.dob) + s.sex + s.exp + ck(s.exp) + s.state.padEnd(3, '<') + "<".repeat(11)
         val composite = ck(line1.substring(5, 30) + upper.substring(0, 7) + upper.substring(8, 15) + upper.substring(18, 29))
         val line2 = upper + composite
@@ -134,12 +149,32 @@ class MrzPropertyTest {
     }
 
     @Test
+    fun `TD3 - noms quelconques en ligne 1 ne font pas lire une carte`() = property {
+        checkAll(prop(9303_14, 5000), arbSpecimen, arbNames) { s, names ->
+            val text = td3(s, names)
+            assertEquals(expectedTd3(s), MrzOcr.findMrz(text), text)
+        }
+    }
+
+    private val td1Codes = Arb.element("ID", "IR", "I<", "IP", "AC", "AR", "C<", "CR")
+
+    @Test
     fun `TD1 - formatage puis parsing rend les memes champs et le bon type`() = property {
-        val codes = Arb.element("ID", "IR", "I<", "IP", "AC", "AR", "C<", "CR")
-        checkAll(prop(9303_02), arbSpecimen, codes) { s, code ->
-            val text = td1(s, code)
+        checkAll(prop(9303_02), arbSpecimen, td1Codes, arbTd1Optional) { s, code, opt ->
+            val text = td1(s, code, opt)
             val expected = MrzOcr.MrzData(s.docNumber, s.dob, s.exp, expectedTd1Type(code), s.state)
             assertEquals(expected, MrzOcr.findMrz(text), text)
+        }
+    }
+
+    @Test
+    fun `TD1 - donnees optionnelles imitant un passeport restent une carte`() = property {
+        checkAll(prop(9303_15), arbSpecimen, td1Codes, arbTd3LikeOptional) { s, code, opt ->
+            val text = td1(s, code, opt)
+            val expected = MrzOcr.MrzData(s.docNumber, s.dob, s.exp, expectedTd1Type(code), s.state)
+            assertEquals(expected, MrzOcr.findMrz(text), text)
+            // Même lecture une fois les sauts de ligne perdus par l'OCR.
+            assertEquals(expected, MrzOcr.findMrz(text.replace("\n", "")), text)
         }
     }
 
