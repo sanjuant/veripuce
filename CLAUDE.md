@@ -73,5 +73,5 @@ lecture NFC ne se teste que sur un téléphone physique ; dire clairement si ce 
 
 ## Git
 
-- Remote actuelle : `https://github.com/sanjuant/veridoc.git`. Le dépôt s'appelle encore `veridoc` côté GitHub et n'est pas sur la forge `git.sjn.wf`.
+- Remote : `https://github.com/sanjuant/veripuce.git` (dépôt renommé depuis `veridoc`, l'ancienne URL redirige). Il n'est pas sur la forge `git.sjn.wf`.
 - Branche principale : `main`
