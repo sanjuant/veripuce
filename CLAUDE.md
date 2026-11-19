@@ -28,7 +28,7 @@ lecture NFC ne se teste que sur un téléphone physique ; dire clairement si ce 
 
 - **Preuve avant de rendre** : `bash .claude/skills/verify/verify.sh --rerun` (tests JVM forcés,
   `lintDebug`, `assembleDebug`, pas de permission `INTERNET` ni `allowBackup` dans le manifeste
-  fusionné). Coller le bloc `VERIFY … VERT` dans le compte rendu. Mode d'emploi, « fausse puce »
+  fusionné, puis `assembleRelease` sans aucune trace du journal des lectures). Coller le bloc `VERIFY … VERT` dans le compte rendu. Mode d'emploi, « fausse puce »
   JVM et feature map de l'app : skill `.claude/skills/verify/SKILL.md`.
 - Appareil ou émulateur déjà démarré : ajouter `--device` (installation, lancement, capture, crash
   logcat). Ne jamais démarrer l'émulateur depuis un agent (processus sans fin).
@@ -55,6 +55,8 @@ lecture NFC ne se teste que sur un téléphone physique ; dire clairement si ce 
 
 - **Aucune vraie donnée d'identité** (MRZ, numéro de document, photo, dump de puce, rapport de diagnostic d'une vraie personne) ne va dans le code, les tests, la doc, les logs ou un commit. Seuls des spécimens fictifs ou les jeux de test publics sont autorisés.
 - Le rapport de diagnostic doit rester caviardé (voir `docs/securite-confidentialite.md`).
+- Le journal des lectures (`src/debug` uniquement, bouchon vide en `src/release`) ne passe que par
+  `JournalRedaction` : liste blanche, jamais d'octet de données APDU (voir `docs/depannage.md`).
 - Ne jamais ajouter la permission Internet.
 
 ## Secrets

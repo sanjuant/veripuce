@@ -4,6 +4,7 @@ Comment diagnostiquer une lecture qui échoue, à partir du **rapport de diagnos
 Ce document décortique ce rapport et donne un **arbre de décision**.
 
 - [1. Activer et lire le rapport](#1-activer-et-lire-le-rapport)
+- [1 bis. Journal des lectures (build debug)](#1-bis-journal-des-lectures-build-debug)
 - [2. Anatomie du rapport](#2-anatomie-du-rapport)
 - [3. Arbre de décision](#3-arbre-de-décision)
 - [4. Pannes classiques](#4-pannes-classiques)
@@ -18,12 +19,61 @@ Le mode diagnostic est **désactivé par défaut**.
 2. Faire la lecture (réussie ou échouée) → une carte **« Détails techniques »** apparaît.
 3. La déplier, puis **Copier** / **Partager**.
 
-> Activer le mode **avant** de reproduire le problème : le collecteur ne tourne qu'en mode
-> diagnostic (garantie « lecture inchangée » sinon). Pour obtenir la ligne `coherence_scan_puce`
+> Activer le mode **avant** de reproduire le problème : en build release, le collecteur ne tourne
+> qu'en mode diagnostic (garantie « lecture inchangée » sinon) ; en build debug il tourne
+> toujours, pour le journal ci-dessous. Pour obtenir la ligne `coherence_scan_puce`
 > (la plus utile), il faut que la lecture **aboutisse** (par le CAN si besoin).
 
 Le rapport ne contient **aucune donnée personnelle** en clair — il est conçu pour être partagé.
 Voir [securite-confidentialite.md](securite-confidentialite.md#3-le-rapport-de-diagnostic-caviardé).
+
+---
+
+## 1 bis. Journal des lectures (build debug)
+
+Le rapport ci-dessus ne couvre que la **dernière** lecture et se partage sur le moment. Pour
+tester les cartes d'autres personnes (soirée, événement) sans pouvoir les garder, le **build
+debug** (APK `veripuce-debug.apk` de la CI `build-apk.yml`, ou `./gradlew assembleDebug`)
+enregistre **chaque** tentative de lecture sur le téléphone, pour tout partager plus tard.
+**Le build release n'a rien de tout cela** : ni écran, ni fichier, ni code (`src/debug` seulement ;
+contrôlé par `verify.sh` sur l'APK release).
+
+**Ce qui est enregistré**, une entrée par tentative (succès ou échec, MRZ ou CAN), dans un
+fichier privé de l'app (`files/journal/lectures.txt`, pas de stockage externe, pas de réseau,
+pas de sauvegarde système), plafonné aux **200 dernières** :
+
+- horodatage, modèle du téléphone, version d'Android, version de l'app + commit ;
+- n° de carte dans la session (`carte: #3 essai 2`) et l'étiquette libre ;
+- les champs techniques du rapport : NFC, type/pays/format du document, EF.CardAccess,
+  tentatives (clé, mapping, étape, SW, durée), reconnexions, BAC, classification, accès final,
+  DG présents, intégrité, signature, **verdict** de cohérence scan↔puce (OK/KO seulement) ;
+- la trace APDU : **en-tête** de chaque commande (CLA INS P1 P2, Lc, Le), SW, longueur de la
+  réponse, durée, et les événements du tag (ouverture, TagLost, reconnexion).
+
+**Ce qui n'est jamais enregistré** : MRZ, numéro de document (pas même les 3 caractères que le
+rapport révèle), motif et empreinte du numéro, dates, CAN, noms, photo, contenu des DG, et
+**aucun octet de données APDU** (clés, nonces, charges utiles). Le caviardage est centralisé
+dans `JournalRedaction` (liste blanche + effacement des valeurs connues de la lecture + filet
+sur les suites de chiffres, l'hexadécimal et les lignes MRZ) et testé sur des spécimens fictifs
+(`JournalRedactionTest`).
+
+### À l'événement
+
+1. Installer le build **debug**. La section **« Journal des lectures (debug) »** est en bas de
+   l'écran principal (pas besoin du mode diagnostic).
+2. Pour chaque carte : scanner la MRZ, saisir si on veut une **étiquette** courte
+   (`carte 3`, `bord usé`…), puis approcher la carte. **Jamais de nom, de date ni de numéro** :
+   la personne est un tiers. Par sécurité, l'étiquette est coupée à 32 caractères et toute suite
+   de 3 chiffres ou plus y est masquée (`[x]`).
+3. Chaque tap ajoute une entrée, échec compris ; le compteur de la section augmente.
+   « Nouvelle vérification » efface l'étiquette pour la carte suivante.
+
+### Partager après coup
+
+1. **Partager tout** → un seul fichier texte `veripuce-journal-AAAAMMJJ-HHMM.txt` via le
+   partage Android (mail, messagerie, Drive…). Entrées séparées par `===== lecture #N =====`.
+2. Une fois le fichier transmis : **Vider** (avec confirmation) efface le journal et la copie
+   de partage.
 
 ---
 

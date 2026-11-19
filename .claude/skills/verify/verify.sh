@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Preuve de fonctionnement de Veripuce, à coller dans le compte rendu d'une tâche.
-#   bash .claude/skills/verify/verify.sh          # JVM + lint + APK + garde-fous
+#   bash .claude/skills/verify/verify.sh          # JVM + lint + APK debug/release + garde-fous
 #   bash .claude/skills/verify/verify.sh --rerun  # force la ré-exécution des tests (preuve anti-flaky)
 #   bash .claude/skills/verify/verify.sh --device # + installation et lancement via adb
 # Sortie : un bloc « VERIFY » lisible, code 0 si tout est vert, 1 sinon.
@@ -63,6 +63,37 @@ if [ -f "$manifest" ]; then
 else
     fail "manifeste fusionné introuvable"
 fi
+
+# 3b. Build release : le journal des lectures (debug uniquement) ne doit y laisser AUCUNE trace —
+#     ni classe, ni chaîne, ni FileProvider, ni INTERNET. Contrôle positif sur l'APK debug pour
+#     prouver que la recherche n'est pas vide de sens.
+dexgrep() { unzip -p "$1" 'classes*.dex' 2>/dev/null | grep -a -c "$2"; }
+start=$(date +%s)
+log=$(mktemp)
+if ./gradlew --console=plain -q assembleRelease >"$log" 2>&1; then
+    pass "gradle assembleRelease ($(( $(date +%s) - start )) s)"
+    rel=$(ls app/build/outputs/apk/release/veripuce-release*.apk 2>/dev/null | head -1)
+    relman=app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+    if [ -n "$rel" ] && [ -f "$relman" ]; then
+        [ "$(dexgrep "$apk" 'Lfr/veripuce/app/journal/')" -gt 0 ] && pass "contrôle positif : journal présent dans l'APK debug" ||
+            fail "contrôle positif : journal absent de l'APK debug ?"
+        [ "$(dexgrep "$rel" 'Lfr/veripuce/app/journal/')" -eq 0 ] && pass "release : aucune classe du journal (dex)" ||
+            fail "release : classes fr.veripuce.app.journal présentes"
+        [ "$(dexgrep "$rel" 'lectures.txt')" -eq 0 ] && pass "release : aucun chemin de fichier du journal (dex)" ||
+            fail "release : chaîne 'lectures.txt' présente"
+        unzip -p "$rel" resources.arsc | grep -a -q 'Journal des lectures' && fail "release : ressources du journal présentes" ||
+            pass "release : aucune ressource du journal (resources.arsc)"
+        grep -q 'FileProvider' "$relman" && fail "release : FileProvider dans le manifeste" ||
+            pass "release : pas de FileProvider (manifeste fusionné)"
+        grep -q 'android.permission.INTERNET' "$relman" && fail "release : permission INTERNET" ||
+            pass "release : aucune permission INTERNET"
+    else
+        fail "APK ou manifeste release introuvable"
+    fi
+else
+    fail "assembleRelease en échec :"; grep -v '^\s*at ' "$log" | tail -30 | sed 's/^/      /'
+fi
+rm -f "$log"
 
 # 4. Optionnel : appareil ou émulateur déjà démarré (ce script n'en démarre jamais).
 if [ $device -eq 1 ]; then

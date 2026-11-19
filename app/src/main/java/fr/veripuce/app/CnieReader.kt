@@ -97,6 +97,8 @@ class CnieReader {
      *                    une puce qui GÈLE (TagLost) sur une clé fausse ne permet pas d'essayer
      *                    la variante suivante dans la même session (tag perdu) — l'UI relance
      *                    donc avec l'offset suivant. 0 = numéro tel que lu (cas nominal).
+     * @param trace       trace APDU OPTIONNELLE (journal des lectures, build debug seulement ;
+     *                    null -> aucune trace).
      */
     fun read(
         isoDep: IsoDep,
@@ -107,6 +109,7 @@ class CnieReader {
         diag: DiagnosticsCollector? = null,
         mappingState: MrzMappingState? = null,
         mrzCandidateOffset: Int = 0,
+        trace: ReadTrace? = null,
     ): ReadResult {
         // Délai COURT pour le handshake PACE : un échange normal répond en <2 s ; un gel
         // (ex. GM sur une carte qui couple mal) échoue ainsi en ~6 s au lieu de 15 s, ce
@@ -120,7 +123,7 @@ class CnieReader {
         }
         onStep?.invoke(ReadStep.CONNECT)
 
-        val cardService = CardService.getInstance(isoDep)
+        val cardService = CardService.getInstance(isoDep).let { trace?.wrap(it) ?: it }
         var service: PassportService? = null
         try {
             cardService.open()
@@ -144,7 +147,7 @@ class CnieReader {
             //    à re-présenter la carte sans proposer le CAN.
             // Reconnexion après un gel : si la carte est toujours dans le champ, le tag
             // répond à nouveau et le mapping suivant est tenté dans le MÊME tap.
-            val reconnect = { reconnectTag(isoDep, diag) }
+            val reconnect = { reconnectTag(isoDep, diag, trace) }
             when (key) {
                 is AccessKey.Can -> openWithCan(svc, key.can, diag, mappingState, reconnect)
                 is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, mappingState, reconnect, mrzCandidateOffset)
@@ -266,7 +269,7 @@ class CnieReader {
      * Ferme puis rouvre la connexion ISO-DEP après un gel. Réussit seulement si la carte est
      * encore dans le champ ; sinon false (le tap suivant reprendra). Tracé dans le rapport.
      */
-    private fun reconnectTag(isoDep: IsoDep, diag: DiagnosticsCollector?): Boolean {
+    private fun reconnectTag(isoDep: IsoDep, diag: DiagnosticsCollector?, trace: ReadTrace?): Boolean {
         val start = System.nanoTime()
         val ok = runCatching {
             runCatching { isoDep.close() }
@@ -275,6 +278,7 @@ class CnieReader {
             isoDep.isConnected
         }.getOrDefault(false)
         diag?.recordAttempt("-", null, "reconnexion", if (ok) "OK" else "échec", elapsedMs(start))
+        trace?.event(if (ok) "reconnexion OK" else "reconnexion échec")
         return ok
     }
 

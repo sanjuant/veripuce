@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BUILD DEBUG UNIQUEMENT : partage du journal des lectures (fichier privé exposé à la
+     demande, en lecture seule, via ACTION_SEND). Absent du manifeste release (verify.sh). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.journal"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/journal_paths" />
+        </provider>
+    </application>
+</manifest>

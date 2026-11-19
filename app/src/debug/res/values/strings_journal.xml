@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build debug uniquement : journal des lectures. -->
+<resources>
+    <string name="journal_title">Journal des lectures (debug)</string>
+    <plurals name="journal_count">
+        <item quantity="one">%1$d lecture enregistrée, %2$d max</item>
+        <item quantity="other">%1$d lectures enregistrées, %2$d max</item>
+    </plurals>
+    <string name="journal_label_hint">Étiquette de la lecture (ex. carte 3)</string>
+    <string name="journal_label_helper">Jamais de nom, de date ni de numéro : la personne est un tiers.</string>
+    <string name="journal_share">Partager tout</string>
+    <string name="journal_clear">Vider</string>
+    <string name="journal_clear_title">Vider le journal ?</string>
+    <string name="journal_clear_text">Toutes les lectures enregistrées sur ce téléphone seront effacées.</string>
+    <string name="journal_empty">Journal vide</string>
+</resources>

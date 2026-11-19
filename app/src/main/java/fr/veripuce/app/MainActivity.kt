@@ -300,6 +300,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.diagHeader).setOnClickListener { toggleDiagDetails() }
         findViewById<MaterialButton>(R.id.diagCopy).setOnClickListener { copyReport() }
         findViewById<MaterialButton>(R.id.diagShare).setOnClickListener { shareReport() }
+        // Journal des lectures : build debug uniquement (bouchon vide en release).
+        if (DebugJournal.ENABLED) DebugJournal.install(this, diagCard)
 
         val hasCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
         scanMrz.visibility = if (hasCamera) View.VISIBLE else View.GONE
@@ -354,6 +356,7 @@ class MainActivity : AppCompatActivity() {
         mrzCandidateCount = if (mrz.docType == MrzOcr.DocType.ID_CARD)
             MrzKeyCandidates.documentNumberCandidates(mrz.documentNumber).size else 1
         diagCollector = null   // nouvelle carte -> nouveau collecteur de diagnostic
+        if (DebugJournal.ENABLED) DebugJournal.onNewCard()
         resultCard.visibility = View.GONE
         diagCard.visibility = View.GONE
         scanCard.visibility = View.GONE
@@ -400,6 +403,7 @@ class MainActivity : AppCompatActivity() {
         readAttempt = 0
         diagCollector = null
         lastReport = null
+        if (DebugJournal.ENABLED) DebugJournal.onNewCheck()
         detectedCard.visibility = View.GONE
         resultCard.visibility = View.GONE
         readingCard.visibility = View.GONE
@@ -455,9 +459,13 @@ class MainActivity : AppCompatActivity() {
         showReading()
         resultCard.visibility = View.GONE
         // Un collecteur par carte (réutilisé de l'échec MRZ au repli CAN), seulement en
-        // mode diagnostic -> zéro impact quand il est inactif.
-        if (diagMode && diagCollector == null) diagCollector = DiagnosticsCollector()
+        // mode diagnostic -> zéro impact quand il est inactif. Build debug : toujours, pour le
+        // journal des lectures.
+        if ((diagMode || DebugJournal.ENABLED) && diagCollector == null) diagCollector = DiagnosticsCollector()
         val collector = diagCollector
+        val attemptsFrom = collector?.attempts?.size ?: 0
+        val trace = if (DebugJournal.ENABLED) DebugJournal.newTrace() else null
+        val tap = readAttempt
         // Rotation des mappings : un mapping qui a gelé (souvent PACE-GM) n'est plus retenté
         // en MRZ ; le lecteur passe au suivant (IM, puis CAM) dans le même tap si le tag se
         // reconnecte, sinon au tap suivant grâce à cet état conservé par carte.
@@ -471,12 +479,19 @@ class MainActivity : AppCompatActivity() {
                     diag = collector,
                     mappingState = mappingState,
                     mrzCandidateOffset = candidateOffset,
+                    trace = trace,
                 )
             }
             withContext(Dispatchers.Main) {
                 result
                     .onSuccess { showResult(it) }
                     .onFailure { onReadFailure(it, req) }
+                if (DebugJournal.ENABLED) {
+                    DebugJournal.record(
+                        this@MainActivity, trace, lastReport.takeIf { collector != null },
+                        attemptsFrom, tap, journalSecrets(req, result.getOrNull()),
+                    )
+                }
             }
         }
     }
@@ -654,6 +669,17 @@ class MainActivity : AppCompatActivity() {
             .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diag_share_subject))
             .putExtra(Intent.EXTRA_TEXT, text)
         startActivity(Intent.createChooser(send, getString(R.string.diag_share)))
+    }
+
+    /** Valeurs brutes de la lecture, transmises au journal (debug) UNIQUEMENT pour être effacées. */
+    private fun journalSecrets(req: AccessRequest, chip: ReadResult?): List<String?> {
+        val key = req.key
+        return listOfNotNull(scanned, req.expectedMrz).flatMap { listOf(it.documentNumber, it.dateOfBirth, it.dateOfExpiry) } +
+            when (key) {
+                is AccessKey.Mrz -> listOf(key.documentNumber, key.dateOfBirth, key.dateOfExpiry)
+                is AccessKey.Can -> listOf(key.can)
+            } +
+            listOf(chip?.documentNumber, chip?.surname, chip?.givenNames, chip?.dateOfBirth, chip?.dateOfExpiry, chip?.mrz)
     }
 
     private fun diagPrefs() = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)

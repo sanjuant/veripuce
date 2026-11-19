@@ -13,7 +13,9 @@ bash .claude/skills/verify/verify.sh --rerun
 
 ≈ 10 s à chaud, 1 à 3 min dans un worktree neuf (build à froid). Ne démarre aucun processus
 persistant. Exécute `testDebugUnitTest` (forcé par `--rerun`), `lintDebug`, `assembleDebug`, puis
-lit les rapports JUnit et le manifeste **fusionné**. Sortie attendue (à coller telle quelle) :
+lit les rapports JUnit et le manifeste **fusionné** ; construit enfin `assembleRelease` et prouve
+que le journal des lectures (debug uniquement) n'y laisse ni classe, ni chaîne, ni ressource, ni
+FileProvider. Sortie attendue (à coller telle quelle) :
 
 ```
 VERIFY veripuce @ <sha>
@@ -23,6 +25,13 @@ VERIFY veripuce @ <sha>
   ✓ APK app/build/outputs/apk/debug/veripuce-debug.apk (30 Mo)
   ✓ aucune permission INTERNET (manifeste fusionné)
   ✓ pas de sauvegarde système (allowBackup)
+  ✓ gradle assembleRelease (40 s)
+  ✓ contrôle positif : journal présent dans l'APK debug
+  ✓ release : aucune classe du journal (dex)
+  ✓ release : aucun chemin de fichier du journal (dex)
+  ✓ release : aucune ressource du journal (resources.arsc)
+  ✓ release : pas de FileProvider (manifeste fusionné)
+  ✓ release : aucune permission INTERNET
 VERIFY: VERT
 ```
 
