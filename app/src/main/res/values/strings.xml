@@ -88,6 +88,7 @@
     <string name="can_after_retries">La lecture par la MRZ échoue de façon répétée. Saisis le CAN (6 chiffres au recto) et réapproche la carte.</string>
     <string name="access_denied_can">Accès refusé — vérifie le CAN (6 chiffres au recto), puis réapproche la carte.</string>
     <string name="access_denied_mrz">Accès refusé — vérifie que la MRZ scannée correspond bien au document, puis réapproche-le.</string>
+    <string name="mapping_retry">La puce n\'a pas répondu. Réapproche la carte et ne bouge plus : l\'app essaie une autre méthode d\'ouverture avant de demander le CAN.</string>
     <string name="read_interrupted">Lecture interrompue — réapproche la carte du dos du téléphone et ne bouge plus.</string>
     <string name="diag_title">Détails techniques</string>
     <string name="diag_copy">Copier</string>

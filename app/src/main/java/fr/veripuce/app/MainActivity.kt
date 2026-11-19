@@ -79,7 +79,11 @@ class MainActivity : AppCompatActivity() {
      *  nombre total de variantes, et protocole du dernier tap (pour décider quand avancer). */
     private var mrzOffset = 0
     private var mrzCandidateCount = 1
-    private var lastPreferIm = false
+
+    /** Rotation des mappings PACE (GM -> IM -> CAM) pour la clé MRZ de la carte courante :
+     *  chaque mapping n'est tenté qu'une fois ; le CAN n'est proposé qu'une fois tous en échec
+     *  (ou sur refus explicite / refus de clé). Réinitialisé à chaque nouvelle carte. */
+    private var mrzMappingState = MrzMappingState()
 
     /** Échecs MRZ TRANSITOIRES consécutifs (gel/TagLost). Au-delà de [FREEZE_BEFORE_CAN], la carte
      *  est traitée comme « gèle sur MRZ » : on cesse d'itérer les variantes et on exige le CAN
@@ -344,6 +348,7 @@ class MainActivity : AppCompatActivity() {
         mrzFailures = 0
         mrzOffset = 0
         mrzFreezeCount = 0
+        mrzMappingState = MrzMappingState()
         readAttempt = 0
         // Variantes à itérer si la clé MRZ échoue (carte d'identité uniquement, cf. openWithMrz).
         mrzCandidateCount = if (mrz.docType == MrzOcr.DocType.ID_CARD)
@@ -391,6 +396,7 @@ class MainActivity : AppCompatActivity() {
         mrzOffset = 0
         mrzCandidateCount = 1
         mrzFreezeCount = 0
+        mrzMappingState = MrzMappingState()
         readAttempt = 0
         diagCollector = null
         lastReport = null
@@ -452,11 +458,10 @@ class MainActivity : AppCompatActivity() {
         // mode diagnostic -> zéro impact quand il est inactif.
         if (diagMode && diagCollector == null) diagCollector = DiagnosticsCollector()
         val collector = diagCollector
-        // Rotation de protocole : après un premier échec de lecture MRZ (souvent un gel de
-        // PACE-GM), on tente PACE-IM en tête au tap suivant — certaines cartes ne lisent
-        // qu'en IM. Chaque tap est une connexion NFC fraîche.
-        val preferIm = mrzFailures >= 1
-        lastPreferIm = preferIm
+        // Rotation des mappings : un mapping qui a gelé (souvent PACE-GM) n'est plus retenté
+        // en MRZ ; le lecteur passe au suivant (IM, puis CAM) dans le même tap si le tag se
+        // reconnecte, sinon au tap suivant grâce à cet état conservé par carte.
+        val mappingState = mrzMappingState
         val candidateOffset = mrzOffset
         readJob = lifecycleScope.launch(Dispatchers.IO) {
             val result = runCatching {
@@ -464,7 +469,7 @@ class MainActivity : AppCompatActivity() {
                     isoDep, req.key, req.expectedMrz, cscaCerts.await(),
                     onStep = { step -> runOnUiThread { showReadStep(step) } },
                     diag = collector,
-                    preferIm = preferIm,
+                    mappingState = mappingState,
                     mrzCandidateOffset = candidateOffset,
                 )
             }
@@ -515,25 +520,36 @@ class MainActivity : AppCompatActivity() {
         if (scanned != null) nfcPrompt.visibility = View.VISIBLE
 
         val keyRefused = e is ChipAccessException
+        val explicitRefusal = keyRefused && req.key is AccessKey.Mrz && mrzMappingState.explicitRefusal
+        // Tous les mappings annoncés ont échoué avec la clé MRZ courante.
+        var mappingsExhausted = false
         if (req.key is AccessKey.Mrz) {
             mrzFailures++   // compteur d'échecs MRZ de la carte courante
+            mappingsExhausted = mrzMappingState.allTried()
             // Itération des variantes du numéro (paires aveugles) :
-            //  - refus net (6300) : tous les candidats depuis l'offset ont été essayés dans le
-            //    tap (la puce refuse proprement) -> variantes épuisées, on passera au CAN.
-            //  - gel en IM : ce candidat est mauvais -> candidat suivant au prochain tap.
-            //  - gel en GM (1er essai) : on ne bouge PAS -> IM réessaiera le MÊME candidat.
+            //  - refus net (6300) ou refus explicite (MSE:Set AT) : les variantes utiles ont
+            //    été essayées dans le tap -> épuisées, on passera au CAN ;
+            //  - tous les mappings en échec pour ce candidat -> candidat suivant au prochain
+            //    tap, avec une rotation de mappings neuve ;
+            //  - gel sur un mapping, d'autres restent : on ne bouge PAS -> le mapping suivant
+            //    réessaiera le MÊME candidat.
             when {
                 keyRefused -> mrzOffset = mrzCandidateCount
-                lastPreferIm -> mrzOffset++
+                mappingsExhausted -> { mrzOffset++; mrzMappingState.resetForNextKey() }
             }
             // Gel (échec transitoire, pas un refus net) : compter les gels consécutifs. Au-delà
             // du seuil, la carte « gèle sur MRZ » -> on cessera d'itérer (cf. buildRequest).
             if (!keyRefused) mrzFreezeCount++
         }
 
-        // Classification finale pour le rapport : refus avéré vs aléa transitoire.
+        // Classification finale pour le rapport.
         diagCollector?.apply {
-            classification = if (keyRefused) "refus avéré (6300)" else "transitoire"
+            classification = when {
+                explicitRefusal -> "refus explicite MSE:Set AT"
+                keyRefused -> "refus avéré (6300)"
+                mappingsExhausted -> "tous les mappings en échec"
+                else -> "transitoire"
+            }
             if (finalAccess == null) finalAccess = "échec"
         }
         assembleReport(chip = null)
@@ -543,13 +559,18 @@ class MainActivity : AppCompatActivity() {
         // n'a aucun chiffre de contrôle, donc on ne se fie pas au type exact — tout ce qui
         // n'est pas un passeport peut avoir un CAN.
         val hasCan = req.key is AccessKey.Mrz && card != null && card.docType != MrzOcr.DocType.PASSPORT
+        // Le CAN n'est proposé qu'une fois la MRZ VRAIMENT en échec : refus de clé / refus
+        // explicite, tous les mappings annoncés essayés, ou trop de gels. Avant, un gel sur un
+        // mapping laisse d'autres mappings à essayer : on invite juste à réapprocher la carte.
+        val canNow = canFallback ||
+            PaceMappingRetry.shouldOfferCan(keyRefused, mappingsExhausted, mrzFreezeCount, FREEZE_BEFORE_CAN)
         when {
+            hasCan && !canNow -> warn(getString(R.string.mapping_retry))
             hasCan -> {
                 // Échec de lecture MRZ sur une carte d'identité. Le CAN (recto) est une clé
                 // alternative FIABLE : 6 chiffres imprimés, sans ambiguïté de glyphe — là où
                 // un n° de document peut porter des paires aveugles (G/6, L/1…) qui rendent la
-                // clé PACE-MRZ incertaine et font GELER certaines puces. On le propose DÈS le
-                // premier échec, sans bloquer une nouvelle tentative MRZ : tant que le CAN
+                // clé PACE-MRZ incertaine et font GELER certaines puces. Tant que le CAN
                 // n'est pas saisi, buildRequest retente la MRZ en itérant les variantes du
                 // numéro, puis, une fois épuisées, attend le CAN pour ne plus boucler.
                 canFallback = true

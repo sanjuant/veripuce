@@ -17,6 +17,10 @@ object PaceError {
         causes(e).filterIsInstance<CardServiceException>()
             .any { it.sw == 0x6300 || (it.sw and 0xFFF0) == 0x63C0 }
 
+    /** 63Cx : la puce décompte des essais restants — ne jamais provoquer un second refus. */
+    fun hasRetryCounter(e: Throwable): Boolean =
+        causes(e).filterIsInstance<CardServiceException>().any { (it.sw and 0xFFF0) == 0x63C0 }
+
     /** Perte de contact NFC (transitoire) — à distinguer d'un refus de clé. */
     fun isTagLost(e: Throwable): Boolean =
         causes(e).any { it is android.nfc.TagLostException }

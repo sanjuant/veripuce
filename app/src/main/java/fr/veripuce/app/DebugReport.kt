@@ -109,6 +109,7 @@ data class DebugReport(
         for (a in attempts) {
             appendLine(
                 "tentative ${a.index}: cle=${a.keyLabel} oid=${a.oid ?: "?"} " +
+                    (a.oid?.let { "mapping=${PaceMapping.of(it)} " } ?: "") +
                     "etape=${a.step} resultat=${a.result} duree=${"%.1f".format(a.durationMs / 1000.0)}s"
             )
         }

@@ -44,9 +44,10 @@ doc:  motif=LLLLLLLLL cd=OK ...          ← motif du n° : L=lettre 9=chiffre. 
 ambigus: [pos=3 lu='6' alt='G']          ← caractères en "paire aveugle" (voir glossaire)
 dates: cd_naissance=OK cd_expiration=OK plausibles=OK annee_exp=2030
 cardaccess: [PACE-ECDH-IM-...] [PACE-ECDH-GM-...]   ← protocoles PACE annoncés par la puce
-tentative 1: cle=MRZ oid=...2.4 etape=GA resultat=TagLost duree=6,0s    ← GM a GELÉ
-tentative 2: cle=MRZ oid=...4.4 etape=GA resultat=TagLost duree=2,2s    ← IM tenté (rotation)
-tentative 3: cle=CAN oid=...4.4 etape=GA resultat=OK duree=0,4s         ← CAN en IM : OK !
+tentative 1: cle=MRZ oid=...2.4 mapping=GM etape=GA resultat=TagLost duree=6,0s ← GM a GELÉ
+tentative 2: cle=- oid=? etape=reconnexion resultat=échec duree=0,1s   ← carte sortie du champ
+tentative 3: cle=MRZ oid=...4.4 mapping=IM etape=GA resultat=TagLost duree=2,2s ← tap suivant : IM
+tentative 4: cle=CAN oid=...4.4 mapping=IM etape=GA resultat=OK duree=0,4s      ← CAN en IM : OK !
 classification: succès
 acces_final: CAN
 dg_presents: 1,2,13,14
@@ -64,7 +65,9 @@ coherence_scan_puce: KO — doc pos 0 : scan='A' puce='B' ; ...           ← pr
 | `resultat=OK` | Cette tentative a **réussi**. |
 | `etape=` | Étape PACE exacte donnée par JMRTD : `MSE:Set AT` (choix du mot de passe/protocole), `GA1-nonce`, `GA2-mapping`, `GA3-accord`, `GA4-auth` (jeton d'authentification). `GA` seul = étape déduite du SW, faute de mieux. |
 | `duree=15,0s` | Le **timeout complet** → gel (la puce ne répondait plus). |
-| `oid=…2.4` vs `…4.4` | Protocole utilisé : `2.4` = **GM**, `4.4` = **IM**. |
+| `oid=…2.4` vs `…4.4` | Protocole utilisé : `2.4` = **GM**, `4.4` = **IM**, `6.4` = **CAM** (repris en clair dans `mapping=`). |
+| `etape=reconnexion` | Après un gel, l'app tente de reconnecter la carte pour essayer le mapping suivant **dans le même tap** (`OK`) ; `échec` = carte sortie du champ, le mapping suivant attend le tap d'après. |
+| `classification:` | `transitoire` (gel, un mapping reste à essayer), `tous les mappings en échec`, `refus explicite MSE:Set AT`, `refus avéré (6300)`. |
 | `coherence_scan_puce` | Compare le n° **scanné** au n° **réel de la puce** — la preuve directe d'une erreur OCR. |
 | `etat` / `motif` | Qualité de l'OCR : `FRA` attendu pour une CNI ; un motif tout en `L` (lettres) est louche. |
 
@@ -79,12 +82,14 @@ La lecture par la MRZ échoue. On lit le rapport :
 │
 ├─ TagLost, duree≈timeout (gel)
 │     → problème de PROTOCOLE ou de COUPLAGE NFC.
-│     → La rotation IM (tentative suivante en oid=…4.4) doit s'en occuper.
+│     → La rotation des mappings (GM → IM → CAM, une fois chacun) doit s'en occuper :
+│       même tap si la reconnexion réussit, sinon tap suivant. Le CAN n'est demandé
+│       qu'après l'échec de TOUS les mappings annoncés.
 │     → Si IM réussit ailleurs (ex. CAN en IM = OK), la carte se lit en IM.
-│     → Action : rien à coder — vérifier que la rotation IM est active (v0.2.1+).
 │
 ├─ etape=MSE:Set AT, SW=0x6A80 / 0x6A88 / 0x6985 (refus immédiat, toutes les tentatives MRZ)
 │     → la puce n'accepte PAS le mot de passe MRZ sur ce protocole (pas une erreur d'OCR).
+│     → L'app propose le CAN tout de suite (`classification: refus explicite MSE:Set AT`).
 │     → Si le CAN passe sur le même oid : la carte n'ouvre l'eMRTD qu'au CAN.
 │
 ├─ SW=0x6300 (refus de clé, rapide ; etape=GA4-auth quand JMRTD la donne)
@@ -109,8 +114,11 @@ La lecture par la MRZ échoue. On lit le rapport :
 **Symptôme** : `classification: transitoire`, `resultat=TagLost`, pas de champ CAN.
 **Cause** : la puce gèle sur un protocole (souvent GM). Un `TagLost` isolé est traité comme un
 aléa (on n'exige pas le CAN pour un simple bougé).
-**Ce que fait l'app** (v0.2.1+) : après **2 échecs MRZ consécutifs**, le champ CAN apparaît, et
-la rotation IM tente l'autre protocole au 2ᵉ tap. Voir
+**Ce que fait l'app** : un gel sur un mapping (souvent GM) déclenche l'essai du mapping suivant
+annoncé par EF.CardAccess (IM, puis CAM), chacun **une seule fois** — dans le même tap si la carte
+se reconnecte, sinon au tap suivant (message « l'app essaie une autre méthode d'ouverture »). Le
+champ CAN n'apparaît qu'après l'échec de **tous** les mappings, après un refus explicite à
+`MSE:Set AT` (6A80/6A88/6985), après un refus de clé (6300/63Cx), ou au 3ᵉ gel cumulé. Voir
 [cles-acces.md](cles-acces.md#6-stratégie-complète-douverture).
 
 ### La puce gèle sur GM mais lit en IM
@@ -120,7 +128,8 @@ la rotation IM tente l'autre protocole au 2ᵉ tap. Voir
 **Cause** : couplage NFC marginal entre cette carte et ce téléphone ; GM (échange plus long)
 décroche, IM (plus court) passe.
 **Ce que fait l'app** : timeout court (6 s) pendant le handshake pour échouer vite, puis
-**rotation IM** au tap suivant.
+reconnexion et **essai en IM dans le même tap** si la carte est restée posée (sinon au tap
+suivant), sans demander le CAN. Budget global du handshake : ~13 s par tap.
 
 ### La MRZ est lisible à l'œil mais l'app affiche « Reflet détecté » et ne scanne pas
 

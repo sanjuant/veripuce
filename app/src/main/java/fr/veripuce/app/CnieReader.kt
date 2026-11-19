@@ -57,6 +57,11 @@ class CnieReader {
         private const val HANDSHAKE_TIMEOUT_MS = 6_000
         /** Timeout transceive pendant la lecture des data groups (marge plus large). */
         private const val READ_TIMEOUT_MS = 15_000
+        /**
+         * Budget global du handshake d'un tap : on n'entame plus de nouveau mapping au-delà
+         * (les mappings restants passent au tap suivant). 2 gels de 6 s tiennent dedans.
+         */
+        internal const val HANDSHAKE_BUDGET_MS = 13_000L
 
         /**
          * Rang de préférence d'un protocole PACE (plus petit = essayé en premier).
@@ -83,9 +88,10 @@ class CnieReader {
      * @param onStep      callback de progression (appelé depuis le thread de lecture).
      * @param diag        collecteur de diagnostic OPTIONNEL (défaut null -> aucune collecte,
      *                    comportement de lecture strictement inchangé).
-     * @param preferIm    ordonner PACE-IM (Integrated Mapping) AVANT GM. Utilisé au tap
-     *                    suivant quand GM a « gelé » (TagLost) : certaines cartes plantent
-     *                    en GM mais lisent en IM, qui évite l'échange DH supplémentaire.
+     * @param mappingState état de la rotation des mappings PACE pour la clé MRZ de la carte
+     *                    courante, conservé d'un tap à l'autre par l'UI : les mappings qui ont
+     *                    déjà échoué (gel GM…) ne sont plus retentés en MRZ, et passent en
+     *                    dernier pour le CAN. null = aucune mémoire (tous les mappings, GM d'abord).
      * @param mrzCandidateOffset index de départ dans la liste des variantes du numéro de
      *                    document (paires aveugles). Sert à ITÉRER les candidats tap par tap :
      *                    une puce qui GÈLE (TagLost) sur une clé fausse ne permet pas d'essayer
@@ -99,7 +105,7 @@ class CnieReader {
         cscaCerts: Collection<X509Certificate> = emptyList(),
         onStep: ((ReadStep) -> Unit)? = null,
         diag: DiagnosticsCollector? = null,
-        preferIm: Boolean = false,
+        mappingState: MrzMappingState? = null,
         mrzCandidateOffset: Int = 0,
     ): ReadResult {
         // Délai COURT pour le handshake PACE : un échange normal répond en <2 s ; un gel
@@ -136,9 +142,12 @@ class CnieReader {
             //    ChipAccessException QUE sur un refus de clé avéré (SW 6300) : un aléa
             //    transitoire (perte de contact, glitch NFC) remonte tel quel -> l'UI invite
             //    à re-présenter la carte sans proposer le CAN.
+            // Reconnexion après un gel : si la carte est toujours dans le champ, le tag
+            // répond à nouveau et le mapping suivant est tenté dans le MÊME tap.
+            val reconnect = { reconnectTag(isoDep, diag) }
             when (key) {
-                is AccessKey.Can -> openWithCan(svc, key.can, diag, preferIm)
-                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, preferIm, mrzCandidateOffset)
+                is AccessKey.Can -> openWithCan(svc, key.can, diag, mappingState, reconnect)
+                is AccessKey.Mrz -> openWithMrz(svc, key, expectedMrz, diag, mappingState, reconnect, mrzCandidateOffset)
             }
 
             // Session ouverte : marge plus large pour la lecture des data groups (DG2 photo).
@@ -253,14 +262,40 @@ class CnieReader {
         }
     }
 
+    /**
+     * Ferme puis rouvre la connexion ISO-DEP après un gel. Réussit seulement si la carte est
+     * encore dans le champ ; sinon false (le tap suivant reprendra). Tracé dans le rapport.
+     */
+    private fun reconnectTag(isoDep: IsoDep, diag: DiagnosticsCollector?): Boolean {
+        val start = System.nanoTime()
+        val ok = runCatching {
+            runCatching { isoDep.close() }
+            isoDep.connect()
+            isoDep.timeout = HANDSHAKE_TIMEOUT_MS
+            isoDep.isConnected
+        }.getOrDefault(false)
+        diag?.recordAttempt("-", null, "reconnexion", if (ok) "OK" else "échec", elapsedMs(start))
+        return ok
+    }
+
     /** CNIe : PACE-CAN. Le CAN = les 6 chiffres imprimés au recto. */
-    private fun openWithCan(service: PassportService, can: String, diag: DiagnosticsCollector?, preferIm: Boolean) {
+    private fun openWithCan(
+        service: PassportService,
+        can: String,
+        diag: DiagnosticsCollector?,
+        mappingState: MrzMappingState?,
+        reconnect: () -> Boolean,
+    ) {
         require(can.length == 6 && can.all { it.isDigit() }) { "Le CAN doit faire 6 chiffres." }
-        val paceInfos = readPaceInfos(service, diag, preferIm)
-        when (val outcome = tryPace(service, PACEKeySpec.createCANKey(can), "CAN", paceInfos, diag)) {
-            PaceOutcome.Success -> { service.sendSelectApplet(true); diag?.finalAccess = "CAN" }
-            is PaceOutcome.KeyRefused -> throw ChipAccessException(outcome.error)  // mauvais CAN
-            is PaceOutcome.Failed -> throw outcome.error ?: IllegalStateException("PACE-CAN impossible")
+        // Les mappings qui ont gelé en MRZ passent en dernier (pas exclus : le CAN peut y réussir).
+        val paceInfos = readPaceInfos(service, diag, demoted = mappingState?.failedEver.orEmpty())
+        val outcome = tryPace(service, PACEKeySpec.createCANKey(can), "CAN", paceInfos, diag, null, reconnect)
+        when (outcome) {
+            is PaceMappingRetry.Outcome.Success -> { service.sendSelectApplet(true); diag?.finalAccess = "CAN" }
+            is PaceMappingRetry.Outcome.KeyRefused -> throw ChipAccessException(outcome.error)  // mauvais CAN
+            is PaceMappingRetry.Outcome.ExplicitRefusal -> throw ChipAccessException(outcome.error)
+            is PaceMappingRetry.Outcome.Interrupted -> throw outcome.error
+            is PaceMappingRetry.Outcome.Exhausted -> throw outcome.error ?: IllegalStateException("PACE-CAN impossible")
         }
     }
 
@@ -277,10 +312,11 @@ class CnieReader {
         mrz: AccessKey.Mrz,
         expectedMrz: MrzOcr.MrzData?,
         diag: DiagnosticsCollector?,
-        preferIm: Boolean,
+        mappingState: MrzMappingState?,
+        reconnect: () -> Boolean,
         mrzCandidateOffset: Int = 0,
     ) {
-        val paceInfos = readPaceInfos(service, diag, preferIm)
+        val paceInfos = readPaceInfos(service, diag)
         // État émetteur si (et seulement si) le document est une carte d'identité TD1.
         val idCardState = expectedMrz?.takeIf { it.docType == MrzOcr.DocType.ID_CARD }?.issuingState
         val isIdCard = idCardState != null
@@ -302,23 +338,39 @@ class CnieReader {
 
         // Itération tap par tap : on démarre au candidat [mrzCandidateOffset]. Sur une puce qui
         // REFUSE proprement (6300), la boucle ci-dessous essaie tous les candidats suivants dans
-        // CE tap. Sur une puce qui GÈLE (TagLost), tryPace relance l'exception -> le tap s'arrête
-        // et l'UI reprend au candidat suivant au tap d'après (le tag est perdu, session morte).
+        // CE tap. Sur une puce qui GÈLE (TagLost), la rotation des mappings tente le mapping
+        // suivant (même tap si le tag se reconnecte, sinon tap suivant, cf. [mappingState]) ;
+        // l'UI ne propose le CAN qu'une fois TOUS les mappings annoncés en échec.
+        val state = mappingState ?: MrzMappingState()
         var refusal: Throwable? = null
         for (docNumber in candidates.drop(mrzCandidateOffset.coerceIn(0, candidates.size))) {
             // Libellé masqué : n° original -> "MRZ" ; variante -> "MRZ-candidat(pos=X)".
             val label = candidateLabel(docNumber, mrz.documentNumber)
             val key = PACEKeySpec.createMRZKey(BACKey(docNumber, mrz.dateOfBirth, mrz.dateOfExpiry))
-            when (val outcome = tryPace(service, key, label, paceInfos, diag)) {
-                PaceOutcome.Success -> {
+            when (val outcome = tryPace(service, key, label, paceInfos, diag, state, reconnect)) {
+                is PaceMappingRetry.Outcome.Success -> {
                     service.sendSelectApplet(true)
                     diag?.finalAccess = if (docNumber == mrz.documentNumber) "MRZ" else "MRZ-candidat"
                     return
                 }
-                is PaceOutcome.KeyRefused -> refusal = outcome.error   // clé fausse -> candidat suivant
-                // Échec non-6300 (protocole/aléa) : les variantes n'y changeront rien,
-                // on remonte tel quel -> l'UI invite à re-présenter la carte.
-                is PaceOutcome.Failed -> throw outcome.error ?: IllegalStateException("PACE-MRZ impossible")
+                is PaceMappingRetry.Outcome.KeyRefused -> {
+                    refusal = outcome.error
+                    // 63Cx : la puce décompte des essais -> ne JAMAIS en provoquer un second.
+                    if (PaceError.hasRetryCounter(outcome.error)) break
+                    state.resetForNextKey()   // clé fausse -> candidat suivant, rotation complète
+                }
+                is PaceMappingRetry.Outcome.ExplicitRefusal -> {
+                    // La puce refuse le mot de passe MRZ dès MSE:Set AT : les variantes du
+                    // numéro n'y changeront rien. BAC éventuel ci-dessous, puis CAN.
+                    refusal = outcome.error
+                    break
+                }
+                // Gel sans reconnexion : le tap suivant reprendra aux mappings restants.
+                is PaceMappingRetry.Outcome.Interrupted -> throw outcome.error
+                // Tous les mappings en échec (non-6300) : les variantes n'y changeront rien ;
+                // l'UI voit [MrzMappingState.allTried] et propose le CAN.
+                is PaceMappingRetry.Outcome.Exhausted ->
+                    throw outcome.error ?: IllegalStateException("PACE-MRZ impossible")
             }
         }
 
@@ -348,21 +400,10 @@ class CnieReader {
         return "MRZ-candidat(pos=$i)"
     }
 
-    /** Issue d'une tentative PACE (multi-protocoles) pour une clé donnée. */
-    private sealed interface PaceOutcome {
-        object Success : PaceOutcome
-        /** Clé refusée (SW 6300) : essayer un autre PROTOCOLE ne sert à rien, la clé est fausse. */
-        data class KeyRefused(val error: Throwable) : PaceOutcome
-        /** Aucun protocole n'a abouti sans que ce soit un refus de clé (protocole rejeté, aléa). */
-        data class Failed(val error: Throwable?) : PaceOutcome
-    }
-
     /**
-     * Tente PACE sur chaque protocole annoncé (GM d'abord) pour UNE clé.
-     * - succès -> [PaceOutcome.Success] ;
-     * - 6300/63Cx -> [PaceOutcome.KeyRefused] immédiat (inutile de changer de protocole) ;
-     * - rejet de protocole (MSE:Set AT) -> protocole suivant ;
-     * - perte de contact NFC -> exception relancée telle quelle (transitoire).
+     * Tente PACE sur les protocoles annoncés pour UNE clé, via [PaceMappingRetry] (rotation
+     * des mappings, un essai par mapping, reconnexion après un gel, budget de temps).
+     * [state] non null = clé MRZ (mémoire inter-taps, refus explicite à MSE:Set AT décisif).
      */
     private fun tryPace(
         service: PassportService,
@@ -370,43 +411,44 @@ class CnieReader {
         keyLabel: String,
         paceInfos: List<PACEInfo>,
         diag: DiagnosticsCollector?,
-    ): PaceOutcome {
-        var lastError: Throwable? = null
-        for (info in paceInfos) {
-            val start = System.nanoTime()
-            try {
-                service.doPACE(key, info.objectIdentifier, PACEInfo.toParameterSpec(info.parameterId), null)
-                diag?.recordAttempt(keyLabel, info.objectIdentifier, "GA", "OK", elapsedMs(start))
-                return PaceOutcome.Success
-            } catch (e: Exception) {
-                diag?.recordFailure(keyLabel, info.objectIdentifier, e, elapsedMs(start))
-                if (PaceError.isTagLost(e)) throw e
-                if (PaceError.isKeyRefused(e)) return PaceOutcome.KeyRefused(e)
-                lastError = e   // protocole rejeté ou aléa -> essayer le protocole suivant
-            }
-        }
-        return PaceOutcome.Failed(lastError)
-    }
+        state: MrzMappingState?,
+        reconnect: () -> Boolean,
+    ): PaceMappingRetry.Outcome = PaceMappingRetry.run(
+        infos = paceInfos,
+        oidOf = { it.objectIdentifier },
+        state = state,
+        stopOnExplicitRefusal = state != null,
+        budgetMs = HANDSHAKE_BUDGET_MS,
+        attempt = { info ->
+            service.doPACE(key, info.objectIdentifier, PACEInfo.toParameterSpec(info.parameterId), null)
+        },
+        reconnect = reconnect,
+        onResult = { info, error, ms ->
+            if (error == null) diag?.recordAttempt(keyLabel, info.objectIdentifier, "GA", "OK", ms)
+            else diag?.recordFailure(keyLabel, info.objectIdentifier, error, ms)
+        },
+    )
 
     private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
 
     private fun readPaceInfos(
         service: PassportService,
         diag: DiagnosticsCollector?,
-        preferIm: Boolean,
+        demoted: Set<PaceMapping> = emptySet(),
     ): List<PACEInfo> {
         val cardAccess = runCatching {
             CardAccessFile(service.getInputStream(PassportService.EF_CARD_ACCESS, PassportService.DEFAULT_MAX_BLOCKSIZE))
         }.getOrNull() ?: return emptyList()
         // EF.CardAccess peut annoncer PLUSIEURS protocoles PACE, et JMRTD les stocke
         // dans un HashSet : « prendre le premier » est NON DÉTERMINISTE. On trie
-        // explicitement. Par défaut GM d'abord (Generic Mapping, le mieux éprouvé ;
-        // ReadID et NFCPassportReader, GM-only, lisent la CNIe). Après un gel de GM,
-        // [preferIm] met IM en tête — voir la rotation de protocole côté UI.
-        // (tryPace abandonne dès un TagLost : seul le protocole de TÊTE est réellement
-        //  tenté par tap ; c'est donc l'ORDRE qui choisit ce qu'on essaie.)
+        // explicitement : GM d'abord (Generic Mapping, le mieux éprouvé ; ReadID et
+        // NFCPassportReader, GM-only, lisent la CNIe), puis IM, puis CAM. [demoted] (mappings
+        // qui ont gelé en MRZ) passe en dernier — utilisé pour le CAN.
         val infos = cardAccess.securityInfos.filterIsInstance<PACEInfo>()
-            .sortedBy { paceRank(it.objectIdentifier, preferIm) }
+            .sortedWith(compareBy<PACEInfo>(
+                { PaceMapping.of(it.objectIdentifier) in demoted },
+                { paceRank(it.objectIdentifier, preferIm = false) },
+            ))
         diag?.recordCardAccess(
             infos.map { DiagnosticsCollector.PACEInfoDescriptor(it.objectIdentifier, it.parameterId) }
         )
