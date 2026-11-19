@@ -20,6 +20,16 @@ class MrzOcrTest {
     // ---------- TD3 (passeport) ----------
 
     @Test
+    fun `TD1 - donnees optionnelles imitant n° + cle ne font pas lire un passeport`() {
+        // Ligne 1 fictive : optionnel « <<AB1234567 1 <<< » (clé de AB1234567 = 1) ; collé à
+        // la ligne 2, il forme une séquence TD3 valide. Attendu : la carte, pas le passeport.
+        val text = "IDUTOD231458907<<AB12345671<<<\n7408122F1204159UTO<<<<<<<<<<<6\nERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+        val mrz = MrzOcr.MrzData("D23145890", "740812", "120415", ID, "UTO")
+        assertEquals(mrz, MrzOcr.findMrz(text))
+        assertEquals(mrz, MrzOcr.findMrz(text.replace("\n", " ")))
+    }
+
+    @Test
     fun `TD3 - specimen ICAO propre`() {
         val text = """
             P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<
